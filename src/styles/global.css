@@ -1092,15 +1092,22 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   color: var(--strong);
 }
 
+.sections {
+  position: relative;
+}
+
 .pill {
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: calc((100% - 8px) / 2);
+  border-radius: 8px;
+  transform: translateX(calc(var(--at, 0) * (100% + 2px)));
   background: var(--card);
   box-shadow:
     0 0 0 1px var(--card-line),
     0 1px 2px rgb(20 20 19 / 0.06);
-  view-transition-name: sections-pill;
 }
 
 .sec-l,
@@ -1115,11 +1122,6 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   font-variant-numeric: tabular-nums;
 }
 
-::view-transition-group(sections-pill) {
-  animation-duration: 300ms;
-  animation-timing-function: var(--out);
-}
-
 @media (hover: hover) and (pointer: fine) {
   .sections a:not([aria-current="page"]):hover {
     color: var(--strong);
@@ -1132,4 +1134,41 @@ html:active-view-transition-type(back)::view-transition-new(root) {
 
 .more .sect {
   margin: 0 0 12px;
+}
+
+.vt-tab .intro {
+  view-transition-name: intro;
+}
+
+.vt-tab .sections {
+  view-transition-name: sections;
+}
+
+.vt-tab .row-link,
+.vt-tab .row-t {
+  view-transition-name: none !important;
+}
+
+::view-transition-group(intro),
+::view-transition-group(sections),
+::view-transition-old(intro),
+::view-transition-new(sections) {
+  animation: none;
+}
+
+::view-transition-new(intro),
+::view-transition-old(sections) {
+  display: none;
+}
+
+html:active-view-transition-type(tab)::view-transition-old(root) {
+  animation: vt-out 120ms ease-in both;
+}
+
+html:active-view-transition-type(tab)::view-transition-new(root) {
+  animation: vt-in 220ms var(--out) 130ms both;
+}
+
+html:active-view-transition-type(tab)::view-transition-group(credit) {
+  animation: none;
 }

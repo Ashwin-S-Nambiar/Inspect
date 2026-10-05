@@ -21,10 +21,10 @@ const heading = tag ? tagLabel(tag) : section === 'projects' ? 'Projects' : 'Not
   <h2 class="sect" data-in style="--i:3">{heading} <span>{posts.length}</span></h2>
 ) : (
   <>
-    <nav class="sections" aria-label="Sections" data-in style="--i:3">
+    <nav class="sections" aria-label="Sections" data-in style={`--i:3; --at:${section === 'notes' ? 1 : 0}`}>
+      <span class="pill" aria-hidden="true"></span>
       {(['projects', 'notes'] as const).map((s) => (
         <a href={s === 'projects' ? '/' : '/notes/'} aria-current={s === section ? 'page' : undefined}>
-          {s === section && <span class="pill" aria-hidden="true"></span>}
           <span class="sec-l">{s === 'projects' ? 'Projects' : 'Notes'}</span>
           <span class="sec-n">{count[s]}</span>
         </a>
