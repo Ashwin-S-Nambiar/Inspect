@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Pasteup</title>
+  <rect width="512" height="512" rx="112" fill="#2f6b4f"/>
+  <path d="M64 0v512M128 0v512M192 0v512M256 0v512M320 0v512M384 0v512M448 0v512M0 64h512M0 128h512M0 192h512M0 256h512M0 320h512M0 384h512M0 448h512" stroke="#3c7a5d" stroke-width="4"/>
+  <rect x="96" y="120" width="320" height="272" rx="16" fill="#8a8a84" stroke="#0b0b0b" stroke-width="16"/>
+  <rect x="136" y="160" width="240" height="44" rx="8" fill="#fff" stroke="#0b0b0b" stroke-width="14"/>
+  <rect x="176" y="308" width="160" height="44" rx="8" fill="#fff" stroke="#0b0b0b" stroke-width="14"/>
+  <rect x="358" y="186" width="40" height="40" rx="6" fill="#ffd21f" stroke="#0b0b0b" stroke-width="12"/>
+</svg>
