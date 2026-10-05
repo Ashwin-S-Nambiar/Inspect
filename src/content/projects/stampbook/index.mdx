@@ -1,0 +1,95 @@
+---
+title: Stampbook
+dek: A travel journal made to look like a passport. Underneath the paper there's one map that never reloads, stamps that are worked out from a hash, a machine readable line that adds up your trips, and photos that fit in a browser.
+date: 2026-10-05T16:00:00+05:30
+kind: project
+tags: [stampbook, maps, maplibre]
+project:
+  name: Stampbook
+  icon: ../../../assets/projects/stampbook.svg
+  about: "A travel journal where every trip is a passport stamp, with a map that flies to each one."
+  made: 2024, rebuilt in 2026
+  live: https://stampbook.ashwin.co.in
+  repo: https://github.com/Ashwin-S-Nambiar/Stampbook
+  stack: [React 19, MapLibre, Motion, IndexedDB]
+thumb: ./thumb.png
+hero:
+  image: ./hero.webp
+  alt: "Stampbook open on a desktop: a map of north India with pins for Delhi, Jaipur and Kolkata on the left page, and a round red, a boxed blue and an octagonal green stamp on the visa page on the right"
+---
+
+<Project /> started in 2024 as Travel Journal, three trips written into the code as cards with a photo and a Google Maps link. The rebuild is a passport: a map on the left page, a visa page of entry stamps on the right, and everything you log kept on your own device.
+
+## One map, moved
+
+A MapLibre map is a WebGL canvas with a lot of state behind it: the style, the loaded tiles, the camera. Stampbook creates it once, inside a plain `div` that isn't owned by any React component. Every page that shows a map renders an empty slot, and the slot takes the map when it mounts:
+
+```js
+useLayoutEffect(() => {
+  const el = ref.current;
+  const before = mapHost.isConnected ? mapHost.getBoundingClientRect() : null;
+  el.appendChild(mapHost);
+  if (!before || still()) return;
+  const after = mapHost.getBoundingClientRect();
+  const dx = before.left - after.left;
+  const dy = before.top - after.top;
+  mapHost.animate(
+    [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+    { duration: 380, easing: 'cubic-bezier(0.32, 0.72, 0, 1)' },
+  );
+}, [cooperative]);
+```
+
+Moving a DOM node doesn't restart what's inside it, so the canvas keeps its context, its tiles and its camera. The layout effect measures where the map was, moves it, measures where it landed, and plays the difference back as a transform before the browser paints, which is a FLIP. On a phone that's the map gliding from the top of the home page to the top of an entry. The page then only says where to look, and the camera flies there. The borders it draws are [India's own](/notes/drawing-india-right/), swapped in for the tiles' merged lines.
+
+Tiles go through a small service worker of their own. It keeps up to 160 map files. The style, the tile index and the borders are checked again after a day, and the tiles themselves live as long as their headers allow, or 30 days. An area you've opened before draws without waiting on the network.
+
+## A stamp that's always the same stamp
+
+Each trip gets its ink, its shape and its angle from its id, not from a random roll when it's drawn:
+
+```js
+export function design(trip) {
+  const h = hash(trip.id || 'x');
+  const ink = INK_ORDER[(h >>> 17) % 3];
+  return {
+    ink,
+    color: INKS[ink],
+    shape: SHAPES[h % SHAPES.length],
+    rot: ((h >>> 3) % 17) - 8,
+    dx: ((h >>> 9) % 13) - 6,
+    dy: ((h >>> 13) % 11) - 5,
+    seed: (h >>> 5) % 97,
+  };
+}
+```
+
+`hash` is FNV-1a, a few lines that turn a string into a well mixed 32 bit number, and different slices of that number pick each part: red, blue or green, one of six shapes, a tilt between -8 and 8 degrees, a nudge off the grid, and a seed for the SVG noise that wears the ink. Edit a trip's dates or rename the place and it keeps the same stamp, because the id doesn't change. Reload, restore a backup on another phone, and it looks the same.
+
+The text on a stamp has to fit whatever the place is called. Stampbook doesn't measure it in the DOM. Barlow Condensed is narrow and even, so each character is taken as 0.47 of the font size wide, and the size comes out of one line of arithmetic, down to a floor of 8. If the line is still too long at 8, SVG's `textLength` squeezes it to the space. A new stamp drops in from 1.7 times its size, overshoots to 0.96 and settles, with a thud made from a tone falling from 140 to 55 Hz and two short bursts of noise.
+
+## A line that adds up your trips
+
+The foot of a passport's photo page has a machine readable zone: capital letters, digits and runs of `<`. Stampbook's map page ends with one, and it's real data:
+
+```
+P<DAYS<<003<<KM<<02660<<<<<<<<<<<<<<<<
+```
+
+Days are every day you were away, counting the first and the last, added across every trip. Kilometres are the great circle distance from each trip to the next in date order, with the haversine formula and the Earth's diameter, 12,742 km. Delhi to Kolkata to Jaipur is 2,660. An entry has its own visa line, the country's three letter code, the place with anything that isn't a letter turned into `<`, and the date you arrived.
+
+## Photos that fit in a browser
+
+A phone photo can be 12 MB, and IndexedDB on a phone isn't a hard drive. So a photo is read with `createImageBitmap`, which also applies the camera's rotation, and drawn twice onto a canvas: once at up to 2000 px as a JPEG at 0.86, once at 560 px at 0.8 for the grid. Only those two blobs are kept, up to 24 photos a trip. Object URLs for them are made once and reused, so scrolling an entry doesn't create a new URL for every image every render.
+
+A backup is one JSON file with a version number, the trips, and every photo as data URLs. It's big, but it's one file you can keep anywhere and restore on another device.
+
+## Search as you type
+
+Place search is Photon, over OpenStreetMap. Typing waits 260 ms, and a new keystroke aborts the request before it. Results lean towards wherever the map is looking. With no bias, "Victoria" is a state in Australia, then a city in Canada. With the map over Kolkata, the top three are all in Kolkata, Victoria Memorial among them. Dropping a pin asks Photon the other way round, for the single nearest named place.
+
+## Rough edges
+
+- **One device at a time.** Trips stay in the browser they were made in. A backup file is how you move them.
+- **Clearing site data clears the passport**, and browsers can evict storage when a device is low on space, so keep a backup.
+- **Search needs a connection**, and so does the map the first time you open an area.
