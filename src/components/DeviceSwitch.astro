@@ -1,0 +1,172 @@
+---
+import type { ImageMetadata } from 'astro';
+import DeviceFrame, { type DeviceKind } from './DeviceFrame.astro';
+
+interface View {
+  label: string;
+  kind: DeviceKind;
+  src: ImageMetadata;
+  alt: string;
+}
+
+interface Props {
+  views: View[];
+  ground?: string;
+  caption?: string;
+  start?: number;
+}
+
+const { views, ground, caption, start = 0 } = Astro.props;
+const id = `dev-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<figure class="fig dev" style={{ '--n': views.length }}>
+  <div class="stage">
+    <div class="stage-in dev-in">
+      {views.map((v, i) => (
+        <div class="view" data-i={i}>
+          <DeviceFrame kind={v.kind} src={v.src} alt={v.alt} ground={ground} />
+        </div>
+      ))}
+    </div>
+  </div>
+  <fieldset class="seg-ctl">
+    <legend class="sr">Screen size</legend>
+    <span class="seg-pill" aria-hidden="true"></span>
+    {views.map((v, i) => (
+      <label>
+        <input type="radio" name={id} value={i} checked={i === start} />
+        <span>{v.label}</span>
+      </label>
+    ))}
+  </fieldset>
+  {caption && <figcaption class="cap">{caption}</figcaption>}
+</figure>
+
+<style>
+  .dev-in {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    container-type: size;
+    background: var(--stage);
+  }
+
+  .view {
+    grid-area: 1 / 1;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(0.97);
+    transition:
+      opacity 220ms var(--out),
+      transform 320ms var(--out),
+      visibility 0s linear 320ms;
+  }
+
+  .dev:has(input[value="1"]:checked) {
+    --at: 1;
+  }
+
+  .dev:has(input[value="2"]:checked) {
+    --at: 2;
+  }
+
+  .dev:has(input[value="3"]:checked) {
+    --at: 3;
+  }
+
+  .dev:has(input[value="0"]:checked) .view[data-i="0"],
+  .dev:has(input[value="1"]:checked) .view[data-i="1"],
+  .dev:has(input[value="2"]:checked) .view[data-i="2"],
+  .dev:has(input[value="3"]:checked) .view[data-i="3"] {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 220ms var(--out),
+      transform 320ms var(--out),
+      visibility 0s;
+  }
+
+  .seg-ctl {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    width: min(100%, calc(var(--n) * 104px));
+    margin: 12px auto 0;
+    padding: 3px;
+    border: 0;
+    border-radius: 11px;
+    background: var(--stage);
+  }
+
+  .seg-pill {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    left: 3px;
+    width: calc((100% - 6px) / var(--n));
+    border-radius: 8px;
+    background: var(--card);
+    box-shadow:
+      0 0 0 1px var(--card-line),
+      0 1px 2px rgb(20 20 19 / 0.06);
+    transform: translateX(calc(var(--at, 0) * 100%));
+    transition: transform 320ms var(--out);
+  }
+
+  .seg-ctl label {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 32px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 480;
+    line-height: 1;
+    color: var(--muted);
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: manipulation;
+    transition:
+      color 150ms ease,
+      transform 120ms var(--out);
+  }
+
+  .seg-ctl label::after {
+    content: "";
+    position: absolute;
+    inset: -6px 0;
+  }
+
+  .seg-ctl label:active {
+    transform: scale(0.97);
+  }
+
+  .seg-ctl input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .seg-ctl label:has(input:checked) {
+    color: var(--strong);
+  }
+
+  .seg-ctl label:has(input:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .seg-ctl label:not(:has(input:checked)):hover {
+      color: var(--strong);
+    }
+  }
+</style>

@@ -1,0 +1,421 @@
+---
+import type { ImageMetadata } from 'astro';
+import { getImage } from 'astro:assets';
+
+interface Side {
+  src: string;
+  poster: ImageMetadata;
+  label: string;
+}
+
+interface Props {
+  before: Side;
+  after: Side;
+  length: number;
+  label: string;
+  caption?: string;
+  start?: number;
+  slow?: number;
+}
+
+const { before, after, length, label, caption, start = 50, slow = 0.25 } = Astro.props;
+const [b, a] = await Promise.all(
+  [before, after].map((s) => getImage({ src: s.poster, format: 'webp', width: Math.min(s.poster.width, 1440) })),
+);
+const clock = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+---
+
+<figure class="fig ccmp" data-ccmp data-length={length} data-slow={slow}>
+  <div class="stage">
+    <div class="stage-in">
+      <div class="cc" style={{ '--pos': `${start}%`, aspectRatio: `${after.poster.width} / ${after.poster.height}` }}>
+        <video class="cc-a" muted playsinline loop preload="metadata" poster={a.src} aria-hidden="true" tabindex="-1">
+          <source src={after.src} type="video/mp4" />
+        </video>
+        <div class="cc-b">
+          <video muted playsinline loop preload="metadata" poster={b.src} aria-hidden="true" tabindex="-1">
+            <source src={before.src} type="video/mp4" />
+          </video>
+        </div>
+        <span class="handle" aria-hidden="true"><span class="grip"></span></span>
+        <span class="lab lab-b" aria-hidden="true">{before.label}</span>
+        <span class="lab lab-a" aria-hidden="true">{after.label}</span>
+        <input type="range" min="0" max="100" step="0.5" value={start} aria-label={`Slide between ${before.label} and ${after.label}`} />
+        <span class="sr">{label}</span>
+      </div>
+      <div class="bar">
+        <button type="button" class="play" aria-label="Play" data-tip="Play" data-play>
+          <svg class="ic ic-play" aria-hidden="true"><use href="#i-play"></use></svg>
+          <svg class="ic ic-pause" aria-hidden="true"><use href="#i-pause"></use></svg>
+        </button>
+        <div class="track" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax={length} aria-valuenow="0" aria-valuetext={clock(0)}>
+          <span class="rail" aria-hidden="true"></span>
+          <span class="fill" aria-hidden="true"></span>
+        </div>
+        <button type="button" class="speed" aria-pressed="false" aria-label="Slow motion" data-tip="Slow motion" data-speed>{slow}×</button>
+      </div>
+    </div>
+  </div>
+  {caption && <figcaption class="cap">{caption}</figcaption>}
+</figure>
+
+<script>
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const clock = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
+
+  for (const fig of document.querySelectorAll<HTMLElement>('[data-ccmp]')) {
+    const lead = fig.querySelector<HTMLVideoElement>('.cc-a');
+    const follow = fig.querySelector<HTMLVideoElement>('.cc-b video');
+    const cc = fig.querySelector<HTMLElement>('.cc');
+    const input = fig.querySelector<HTMLInputElement>('.cc input');
+    const play = fig.querySelector<HTMLButtonElement>('[data-play]');
+    const speed = fig.querySelector<HTMLButtonElement>('[data-speed]');
+    const track = fig.querySelector<HTMLElement>('.track');
+    const fill = fig.querySelector<HTMLElement>('.fill');
+    if (!lead || !follow || !cc || !input || !play || !speed || !track || !fill) continue;
+    const length = Number(fig.dataset.length) || 1;
+    const slow = Number(fig.dataset.slow) || 0.25;
+    const hasFrames = 'requestVideoFrameCallback' in HTMLVideoElement.prototype;
+    let heldByUser = false;
+    let scrubbing = false;
+    let shown = '';
+
+    input.addEventListener('input', () => cc.style.setProperty('--pos', `${input.value}%`));
+
+    const render = (t: number) => {
+      fill.style.transform = `scaleX(${Math.min(1, t / length)})`;
+      const text = clock(t);
+      if (text !== shown) {
+        track.setAttribute('aria-valuenow', t.toFixed(1));
+        track.setAttribute('aria-valuetext', text);
+        shown = text;
+      }
+    };
+
+    const align = (t: number) => {
+      if (Math.abs(follow.currentTime - t) > 0.05) follow.currentTime = t;
+    };
+
+    const onFrame = (_: number, meta: VideoFrameCallbackMetadata) => {
+      render(meta.mediaTime);
+      align(meta.mediaTime);
+      if (!lead.paused) lead.requestVideoFrameCallback(onFrame);
+    };
+    const onRaf = () => {
+      render(lead.currentTime);
+      align(lead.currentTime);
+      if (!lead.paused) requestAnimationFrame(onRaf);
+    };
+
+    const sync = () => {
+      const playing = !lead.paused;
+      fig.toggleAttribute('data-playing', playing);
+      play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+      play.dataset.tip = playing ? 'Pause' : 'Play';
+      if (playing) {
+        follow.currentTime = lead.currentTime;
+        follow.play().catch(() => {});
+        if (hasFrames) lead.requestVideoFrameCallback(onFrame);
+        else requestAnimationFrame(onRaf);
+      } else {
+        follow.pause();
+        follow.currentTime = lead.currentTime;
+      }
+    };
+    lead.addEventListener('play', sync);
+    lead.addEventListener('pause', sync);
+
+    const start = () => {
+      lead.play().catch(() => {});
+    };
+    const seek = (t: number) => {
+      const at = Math.min(length, Math.max(0, t));
+      lead.currentTime = at;
+      follow.currentTime = at;
+      render(at);
+    };
+
+    play.addEventListener('click', () => {
+      if (lead.paused) {
+        heldByUser = false;
+        start();
+      } else {
+        heldByUser = true;
+        lead.pause();
+      }
+    });
+
+    speed.addEventListener('click', () => {
+      const on = speed.getAttribute('aria-pressed') !== 'true';
+      speed.setAttribute('aria-pressed', String(on));
+      lead.playbackRate = follow.playbackRate = on ? slow : 1;
+    });
+
+    const ratio = (x: number) => {
+      const r = track.getBoundingClientRect();
+      return Math.min(1, Math.max(0, (x - r.left) / r.width));
+    };
+    track.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      scrubbing = true;
+      track.setPointerCapture(e.pointerId);
+      seek(ratio(e.clientX) * length);
+    });
+    track.addEventListener('pointermove', (e) => {
+      if (scrubbing) seek(ratio(e.clientX) * length);
+    });
+    const end = () => {
+      scrubbing = false;
+    };
+    track.addEventListener('pointerup', end);
+    track.addEventListener('pointercancel', end);
+    track.addEventListener('keydown', (e) => {
+      const step = e.shiftKey ? 0.1 : 0.5;
+      const keys: Record<string, number> = {
+        ArrowLeft: lead.currentTime - step,
+        ArrowRight: lead.currentTime + step,
+        Home: 0,
+        End: length,
+      };
+      if (!(e.key in keys)) return;
+      e.preventDefault();
+      seek(keys[e.key]);
+    });
+
+    new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          if (!heldByUser && !reduced.matches) start();
+        } else if (!lead.paused) {
+          lead.pause();
+        }
+      },
+      { threshold: 0.6 },
+    ).observe(fig.querySelector('.stage') ?? fig);
+  }
+</script>
+
+<style>
+  .cc {
+    position: relative;
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  .cc video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .cc-b {
+    position: absolute;
+    inset: 0;
+    clip-path: inset(0 calc(100% - var(--pos)) 0 0);
+  }
+
+  .handle {
+    position: absolute;
+    inset: 0;
+    transform: translateX(var(--pos));
+    pointer-events: none;
+  }
+
+  .handle::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -0.75px;
+    width: 1.5px;
+    background: var(--accent);
+  }
+
+  .grip {
+    position: absolute;
+    top: 50%;
+    left: -13px;
+    width: 26px;
+    height: 26px;
+    margin-top: -13px;
+    border-radius: 50%;
+    background: var(--handle);
+    box-shadow:
+      0 0 0 1.5px var(--accent),
+      0 2px 6px rgb(0 0 0 / 0.18);
+    transition: transform 150ms var(--out);
+  }
+
+  .grip::before,
+  .grip::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 0;
+    height: 0;
+    margin-top: -4px;
+    border-block: 4px solid transparent;
+  }
+
+  .grip::before {
+    left: 6px;
+    border-right: 4px solid var(--accent);
+  }
+
+  .grip::after {
+    right: 6px;
+    border-left: 4px solid var(--accent);
+  }
+
+  .lab {
+    position: absolute;
+    top: 10px;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 1.3;
+    pointer-events: none;
+    background: var(--chip);
+    color: var(--chip-ink);
+  }
+
+  .lab-b {
+    left: 10px;
+  }
+
+  .lab-a {
+    right: 10px;
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  .cc input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: ew-resize;
+  }
+
+  .cc:has(input:active) .grip {
+    transform: scale(1.08);
+  }
+
+  .cc:has(input:focus-visible) .grip {
+    box-shadow:
+      0 0 0 1.5px var(--accent),
+      0 0 0 4px var(--accent-soft);
+  }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border-top: 1px solid var(--card-line);
+  }
+
+  .play,
+  .speed {
+    display: grid;
+    flex: none;
+    place-items: center;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--stage);
+    color: var(--strong);
+    -webkit-touch-callout: none;
+    user-select: none;
+    touch-action: manipulation;
+    transition:
+      transform 120ms var(--out),
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .play {
+    position: relative;
+    width: 28px;
+  }
+
+  .play::after,
+  .speed::after {
+    content: "";
+    position: absolute;
+    inset: -8px;
+  }
+
+  .speed {
+    position: relative;
+    min-width: 52px;
+    padding: 0 9px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .speed[aria-pressed="true"] {
+    background: var(--strong);
+    color: var(--bg);
+  }
+
+  .play:active,
+  .speed:active {
+    transform: scale(0.94);
+  }
+
+  .play .ic {
+    grid-area: 1 / 1;
+    width: 12px;
+    height: 12px;
+    transition: opacity 120ms ease;
+  }
+
+  .ic-pause,
+  [data-playing] .ic-play {
+    opacity: 0;
+  }
+
+  [data-playing] .ic-pause {
+    opacity: 1;
+  }
+
+  .track {
+    position: relative;
+    flex: 1;
+    height: 28px;
+    cursor: pointer;
+    touch-action: none;
+  }
+
+  .track:focus-visible {
+    outline-offset: 0;
+  }
+
+  .rail,
+  .fill {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 13px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  .fill {
+    background: var(--strong);
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .play:hover,
+    .speed:not([aria-pressed="true"]):hover {
+      background: var(--line);
+    }
+  }
+</style>
