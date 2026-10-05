@@ -1,0 +1,111 @@
+---
+title: QuizzMe!
+dek: "Trivia dealt as a deck of cards, built around an API that answers one question request every five seconds. Most of the work is in waiting well: a queue that survives a reload, a plan for every response code, and a busy state that never flashes."
+date: 2026-10-05T20:00:00+05:30
+kind: project
+tags: [quizzme, react, motion]
+project:
+  name: QuizzMe!
+  icon: ../../../assets/projects/quizzme.svg
+  about: "Trivia on 24 topics dealt as cards, with streaks, a scorecard and a replay of misses."
+  made: 2024, rebuilt in 2026
+  live: https://quizzme.ashwin.co.in
+  repo: https://github.com/Ashwin-S-Nambiar/QuizzMe
+  stack: [React 19, Tailwind CSS 4, Motion, Open Trivia DB]
+thumb: ./thumb.png
+hero:
+  image: ./hero.webp
+  alt: "QuizzMe on a desktop: the headline Settle a bet, or start one, a fanned pile of trivia cards, and the setup panel with Anything goes, difficulty, ten cards and the Deal button"
+---
+
+import Annotated from '../../../components/Annotated.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
+import phone from './phone.webp';
+import tablet from './tablet.webp';
+import usedUp from './used-up.webp';
+
+<Project /> started in 2024 as a practice run at fetching data in React: a form of dropdowns, one round and a score. Now a round is a deck of trivia cards on warm paper, dealt one at a time, with a scorecard at the end and a replay of the ones you missed. The questions come from Open Trivia DB, and its limits shaped more of the code than anything else.
+
+The landing fits one screen at every size. On a phone it stacks: the headline, then the setup, with Deal at the bottom where your thumb is.
+
+<DeviceSwitch
+  ground="#F6F2EA"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'QuizzMe on an iPhone: the headline at the top and the setup card below it, with Deal 10 cards at the bottom' },
+    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'QuizzMe on an iPad in landscape: the headline and card pile on the left, the setup panel on the right' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'QuizzMe on a desktop: the headline and card pile on the left, the setup panel on the right' },
+  ]}
+  caption="The landing three ways."
+/>
+
+## One request every five seconds
+
+Open Trivia DB allows one question request every five seconds from each IP address. Its other endpoints, the list of topics and the counts per topic, aren't limited, so those load straight away and the topics are kept for a week. Only the questions wait.
+
+Every question request goes through one promise chain, so they line up one behind another, and the time of the last one is written to `localStorage`:
+
+```js
+function throttle(signal, onWait) {
+  const run = chain.then(async () => {
+    const wait = (read(LAST_KEY) ?? 0) + GAP - Date.now();
+    if (wait > 0) {
+      onWait?.(Date.now() + wait);
+      await sleep(wait, signal);
+    }
+    write(LAST_KEY, Date.now());
+  });
+  chain = run.catch(() => {});
+  return run;
+}
+```
+
+`GAP` is 5,200 ms, the limit plus a little room. Because the last request's time lives in storage rather than memory, reloading the page or opening a second tab doesn't reset the clock, and `onWait` hands the deadline to the button that's counting it down. The `sleep` listens for an abort, so backing out of a wait cancels it instead of leaving a request queued behind you. If the API still says no, with a 429 or its own rate limit code, the request goes back through the queue, up to four tries.
+
+## A plan for every response code
+
+Every answer from `api.php` carries a `response_code`, and each one means something different:
+
+| Code | Means | QuizzMe |
+| --- | --- | --- |
+| 0 | Success | Deals the cards and renews the token's clock |
+| 1 | Not enough questions for that mix | Suggests fewer cards, or Mixed types |
+| 2 | Invalid options | Says so, with a retry |
+| 3 | Token not found | Drops it, gets a new one and asks again |
+| 4 | Token has served every question in the mix | Offers Start over |
+| 5 | Rate limited | Waits its turn and asks again |
+
+The token is what stops repeats: Open Trivia DB remembers which questions it has given to a token and won't give them again. Tokens are dropped after six hours unused, so QuizzMe reuses one for five and a half, and every successful round resets that clock. Code 1 rarely happens, because each topic shows how many questions it has at each difficulty, and a round can't ask for more.
+
+<Annotated
+  src={usedUp}
+  narrow
+  alt="QuizzMe's setup panel after every question in Anything goes has been served: a red banner under the Deal button saying you've seen every question in this mix, with a Start over button"
+  caption="Code 4, answered on purpose for this shot."
+  marks={[
+    { x: 5.2, y: 82.1, w: 88.6, h: 12, note: 'Code 4: this token has served every question in the mix' },
+    { x: 56, y: 85, w: 25, h: 6.8, note: 'Start over resets the token on the server, then deals again' },
+    { x: 72.9, y: 8.2, w: 11.4, h: 4.3, note: "Counts come from an endpoint that isn't rate limited" },
+  ]}
+/>
+
+## Questions, decoded
+
+By default Open Trivia DB sends text with HTML entities in it, so a quote mark arrives as `&quot;` and an apostrophe as `&#039;`. Asking for `encode=url3986` instead means every field is percent encoded, and one `decodeURIComponent` per field turns it back into exactly what was written, with no entity table to maintain. A malformed escape falls back to the raw text instead of throwing.
+
+True or false questions always show True then False. Everything else is shuffled with Fisher and Yates, and the shuffle takes its random function as an argument, so the tests can pass in a fixed one. Topics like "Entertainment: Video Games" are split into a group and a label, which is how the topic sheet groups them.
+
+Questions vary from a few words to about 250 characters, with most around 65. The card steps the question down through four type sizes by length, so a long one doesn't push the answers below the fold on a phone.
+
+## A busy state that doesn't flash
+
+A fast deal shouldn't show a spinner for a blink. So the deal button only shows that it's busy after 250 ms, and once shown, it stays for at least 450 ms. If the request has to wait for the rate limit, the countdown shows straight away, since then there's a real wait to explain. The code for the play screen is a separate chunk, and it loads at the same time as the questions, so dealing the first card never waits on a download after the questions arrive.
+
+The quiz itself is plain functions: decoding a question, shuffling, scoring, streaks, the split by difficulty and the shareable grid. They don't know about React, and `node --test` checks them without a browser.
+
+## Rough edges
+
+- **The first chunk is heavy.** About 140 KB gzipped, mostly React, Motion and icons. Play, results, stats and the 404 load when needed.
+- **The limit is per IP.** On shared wifi, someone else's round can make you wait.
+- **Stats don't travel.** They live in one browser.
+- **The questions are crowd sourced.** Now and then one is dated or debatable.

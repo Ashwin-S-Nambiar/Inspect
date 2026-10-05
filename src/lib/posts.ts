@@ -83,6 +83,9 @@ const tagNames: Record<string, string> = {
   redline: 'Redline',
   stampbook: 'Stampbook',
   tenzies: 'Tenzies',
+  pasteup: 'Pasteup',
+  quizzme: 'QuizzMe',
+  chit: 'Chit',
 };
 
 export const tagName = (t: string) => tagNames[t] ?? t.replace(/-/g, ' ');
