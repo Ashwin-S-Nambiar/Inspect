@@ -119,10 +119,15 @@ const links = project && [
       .map((a) => document.getElementById(a.dataset.toc ?? ''))
       .filter((h): h is HTMLElement => Boolean(h));
     let queued = false;
+    let aimed: string | undefined;
     const update = () => {
       queued = false;
       let current = 'top';
       for (const h of heads.slice(1)) if (h.getBoundingClientRect().top < innerHeight * 0.35) current = h.id;
+      if (innerHeight + scrollY >= document.documentElement.scrollHeight - 4) {
+        for (const h of heads.slice(1)) if (h.getBoundingClientRect().top < innerHeight) current = h.id;
+      }
+      if (aimed) current = aimed;
       for (const a of links) {
         if (a.dataset.toc === current) a.setAttribute('aria-current', 'true');
         else a.removeAttribute('aria-current');
@@ -136,12 +141,34 @@ const links = project && [
     addEventListener('scroll', queue, { passive: true });
     addEventListener('resize', queue);
     update();
-    links[0]?.addEventListener('click', (e) => {
-      e.preventDefault();
-      const smooth = !matchMedia('(prefers-reduced-motion: reduce)').matches;
-      scrollTo({ top: 0, behavior: smooth ? 'smooth' : 'auto' });
-      history.replaceState(history.state, '', location.pathname);
-    });
+    const release = () => {
+      if (!aimed) return;
+      aimed = undefined;
+      queue();
+    };
+    addEventListener('scrollend', release);
+    addEventListener('wheel', release, { passive: true });
+    addEventListener('touchstart', release, { passive: true });
+    for (const a of links) {
+      a.addEventListener('click', (e) => {
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const id = a.dataset.toc ?? 'top';
+        const target = id === 'top' ? undefined : document.getElementById(id);
+        if (id !== 'top' && !target) return;
+        e.preventDefault();
+        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+        const top = target ? target.getBoundingClientRect().top + scrollY - Number.parseFloat(getComputedStyle(target).scrollMarginTop || '0') : 0;
+        const max = document.documentElement.scrollHeight - innerHeight;
+        history.replaceState(history.state, '', target ? `#${id}` : location.pathname);
+        aimed = id;
+        update();
+        if (Math.abs(Math.min(top, max) - scrollY) < 2) {
+          aimed = undefined;
+          return;
+        }
+        scrollTo({ top, behavior });
+      });
+    }
 
     const back = document.querySelector<HTMLAnchorElement>('.back');
     const nav = (window as { navigation?: Navigation }).navigation;
