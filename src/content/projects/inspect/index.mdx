@@ -46,29 +46,29 @@ Now both pages render both lists, stacked in one grid cell, and the one you're n
 
 .panel {
   grid-area: 1 / 1;
-  transition: opacity 220ms var(--out) 130ms;
+  min-width: 0;
 }
 
-.panel[inert] {
+.panel[inert]:not(.leaving) {
   visibility: hidden;
-  opacity: 0;
-  transition: opacity 120ms ease-in, visibility 0s linear 120ms;
 }
 ```
 
-The cell is as tall as the taller list, so swapping them can't change the height of the page. A click on Projects or Notes, or on a filter, is caught on the page: the old list fades out, the new one fades in after it, and `history.pushState` changes the URL and the title, so back and forward still work.
+The cell is as tall as the taller list, so swapping them can't change the height of the page. A click on Projects or Notes, or on a filter, is caught on the page, and `history.pushState` changes the URL and the title, so back and forward still work.
+
+The swap moves the way the switch does. The rows you're leaving slide 16 px toward the tab you came from and fade in 110 ms. The new rows come in from 24 px the other side, 28 ms apart, on a spring that overshoots by 2%, and the pill under the labels rides the same spring. Only rows on screen move; the rest just appear. A filter does the same thing vertically: the old rows lift away, the new ones rise in.
 
 <Clip
   src={switchClip}
   poster={switchPoster}
   length={10.8}
-  label="the home page: the cursor picks Notes and the project list fades out before the notes fade in, then picks the Canvas filter and the list fades out and back with two notes, then picks Projects and the filters fade away while staying in place"
+  label="the home page: the cursor picks Notes and the project rows slide out to the left as the notes slide in from the right one after another, then picks the Canvas filter and the rows lift away as two notes rise in, then picks Projects and the rows slide back the other way while the filters fade in place"
   caption="At a third of the speed."
   cues={[
     { from: 0.3, to: 1.8, text: 'Both lists are on this page, in the same spot', x: 2.6, y: 53.3, w: 94.7, h: 46.7 },
-    { from: 1.8, to: 3.3, text: 'Notes: the projects fade out, then the notes fade in', x: 2.6, y: 53.3, w: 94.7, h: 46.7 },
+    { from: 1.8, to: 3.3, text: 'Notes: the projects slide out, the notes follow in from the right', x: 2.6, y: 53.3, w: 94.7, h: 46.7 },
     { from: 3.3, to: 5.1, text: 'The filters were there the whole time, just hidden', x: 63.1, y: 40.8, w: 32.5, h: 6.6 },
-    { from: 5.1, to: 7.0, text: 'A filter fades the list out and back', x: 2.6, y: 53.3, w: 94.7, h: 46.7 },
+    { from: 5.1, to: 7.0, text: 'A filter lifts the old rows away and rises the new ones in', x: 2.6, y: 53.3, w: 94.7, h: 46.7 },
     { from: 8.4, to: 10.8, text: 'Back to projects. The filters fade but keep their space', x: 63.1, y: 40.8, w: 32.5, h: 6.6 },
   ]}
 />
