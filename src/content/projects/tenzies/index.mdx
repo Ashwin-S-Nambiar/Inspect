@@ -22,7 +22,6 @@ import ClipCompare from '../../../components/ClipCompare.astro';
 import DeviceSwitch from '../../../components/DeviceSwitch.astro';
 import desktop from './desktop.webp';
 import phone from './phone.webp';
-import tablet from './tablet.webp';
 import oldRoll from './roll-v1.mp4';
 import oldPoster from './roll-v1.jpg';
 import newRoll from './roll-v2.mp4';
@@ -97,10 +96,9 @@ The game never scrolls, from a 320 px phone to a 2560 px monitor. That shaped th
   ground="#1a4c4e"
   views={[
     { label: 'iPhone', kind: 'phone', src: phone, alt: 'Tenzies on an iPhone mid game: the tally, two rows of five dice with five fours held, the hint line, and roll at the bottom of the screen' },
-    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'the same game on an iPad in landscape: larger dice in two rows of five with the roll button under the hint line' },
     { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'the same game on a desktop: large dice in two rows of five, with the keyboard shortcuts listed under the roll button' },
   ]}
-  caption="The same game three ways. Only the arrangement changes."
+  caption="The same game on a phone and a desktop. Only the arrangement changes."
 />
 
 On a computer the keys are listed under the button: Space rolls or starts again, 1 to 0 hold dice one to ten, and N starts a new game with undo.

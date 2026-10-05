@@ -22,7 +22,6 @@ import Annotated from '../../../components/Annotated.astro';
 import DeviceSwitch from '../../../components/DeviceSwitch.astro';
 import desktop from './desktop.webp';
 import phone from './phone.webp';
-import tablet from './tablet.webp';
 import usedUp from './used-up.webp';
 
 <Project /> started in 2024 as a practice run at fetching data in React: a form of dropdowns, one round and a score. Now a round is a deck of trivia cards on warm paper, dealt one at a time, with a scorecard at the end and a replay of the ones you missed. The questions come from Open Trivia DB, and its limits shaped more of the code than anything else.
@@ -33,10 +32,9 @@ The landing fits one screen at every size. On a phone it stacks: the headline, t
   ground="#F6F2EA"
   views={[
     { label: 'iPhone', kind: 'phone', src: phone, alt: 'QuizzMe on an iPhone: the headline at the top and the setup card below it, with Deal 10 cards at the bottom' },
-    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'QuizzMe on an iPad in landscape: the headline and card pile on the left, the setup panel on the right' },
     { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'QuizzMe on a desktop: the headline and card pile on the left, the setup panel on the right' },
   ]}
-  caption="The landing three ways."
+  caption="The landing on a phone and a desktop."
 />
 
 ## One request every five seconds

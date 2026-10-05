@@ -77,6 +77,7 @@ Not built yet, build when a project needs it: a spec strip (palette swatches, ty
 ### DeviceSwitch and DeviceFrame
 
 - Most app write-ups get one, near the start, with a sentence on how the phone layout differs. Skip it when the portfolio already shows the same widths side by side (Redline).
+- Each view has to be a different layout. Put the iPad and desktop captures side by side before using them: if the iPad is the desktop layout at a smaller size (Fandeck, MovieVault, QuizzMe, Stampbook, Tenzies), use iPhone and Desktop only. Keep the iPad when something moves or goes (Pasteup drops its template rail, Chit drops its keys).
 - The status bar ink follows `ground`: dark ink on light screens, light ink on dark ones.
 - The home indicator stays on both iPhone and iPad; it's on screen in every app on both.
 
