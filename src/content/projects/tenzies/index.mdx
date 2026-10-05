@@ -18,7 +18,6 @@ hero:
   alt: "Tenzies on a desktop after a win: all ten dice ivory on fours on petrol green felt, six rolls in 54 seconds, a new best, and a play again button"
 ---
 
-import Annotated from '../../../components/Annotated.astro';
 import ClipCompare from '../../../components/ClipCompare.astro';
 import DeviceSwitch from '../../../components/DeviceSwitch.astro';
 import desktop from './desktop.webp';
@@ -28,7 +27,6 @@ import oldRoll from './roll-v1.mp4';
 import oldPoster from './roll-v1.jpg';
 import newRoll from './roll-v2.mp4';
 import newPoster from './roll-v2.jpg';
-import warn from './warn.webp';
 
 <Project /> is ten dice. You hold the ones that match and roll the rest until all ten show the same number, and fewer rolls is better. I first built it in 2024 as a React exercise, and gave it a darker coat in early 2025: flat red squares on a black grid, pips that scrambled when you rolled, and a held die that turned white.
 
@@ -70,18 +68,6 @@ function settle(game) {
 ```
 
 The second `if` ends the game on the roll that locks a mismatch. That would be harsh with nothing on screen, so the line under the dice reads the same state before you roll. Most of the time it just counts: "5 of 10 on fours. Roll the other 5." Hold a die that doesn't match and it warns you instead, and the button turns into Roll anyway.
-
-<Annotated
-  src={warn}
-  alt="Tenzies mid game: five fours held for good in ivory and a two just held, the line under the dice warning that the held dice don't match, and the button reading roll anyway"
-  caption="A two held next to five locked fours."
-  marks={[
-    { x: 25.2, y: 18.7, w: 14.1, h: 18.2, note: 'Held this turn, so it can still be let go' },
-    { x: 7.4, y: 18.7, w: 14.1, h: 18.2, note: 'Held on an earlier roll, so it stays' },
-    { x: 37.4, y: 66.8, w: 25, h: 7.2, note: 'The line warns instead of counting' },
-    { x: 31.8, y: 81.6, w: 36.4, h: 8.2, note: 'Roll turns into Roll anyway' },
-  ]}
-/>
 
 The loss isn't announced on the click. The roll is already in the air, so the shake, the red ring, the low two-note sound and the buzz wait until the last loose die has landed, about 576 ms plus 26 ms for every die that moved. The result arrives when the dice do.
 
