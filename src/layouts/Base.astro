@@ -74,9 +74,6 @@ const home = Astro.url.pathname === '/';
           if (sessionStorage.getItem('inspect:in')) d.classList.add('instant');
           else sessionStorage.setItem('inspect:in', '1');
         } catch {}
-        const TABS = ['/', '/notes/'];
-        const tabOf = (url) => (url ? TABS.indexOf(new URL(url).pathname) : -1);
-        const tabSwitch = (other) => tabOf(location.href) >= 0 && tabOf(other) >= 0 && tabOf(other) !== tabOf(location.href);
         const managed = 'onpagereveal' in window && 'navigation' in window;
         if (managed) history.scrollRestoration = 'manual';
         const save = () => {
@@ -101,7 +98,6 @@ const home = Astro.url.pathname === '/';
         addEventListener('pageswap', (e) => {
           save();
           if (!e.viewTransition) return;
-          d.classList.toggle('vt-tab', tabSwitch(e.activation?.entry?.url));
           unname(e.activation?.entry?.url);
           for (const t of heroes()) if (!seen(t)) t.classList.add('vt-solo');
         });
@@ -110,33 +106,16 @@ const home = Astro.url.pathname === '/';
           if (e.viewTransition) d.classList.add('ready', 'instant');
           if (!managed) return;
           const act = navigation.activation;
-          const tab = e.viewTransition && tabSwitch(act?.from?.url);
-          d.classList.toggle('vt-tab', Boolean(tab));
-          if (e.viewTransition && !tab) unname(act?.from?.url);
+          if (e.viewTransition) unname(act?.from?.url);
           const type = act?.navigationType;
           if (e.viewTransition && e.viewTransition.types) {
             const back = type === 'traverse' && act.entry && act.from && act.entry.index < act.from.index;
-            e.viewTransition.types.add(tab ? 'tab' : back ? 'back' : 'forward');
-          }
-          if (tab) {
-            const links = document.querySelectorAll('.sections a');
-            const pill = document.querySelector('.sections .pill');
-            const from = links[tabOf(act.from.url)];
-            const to = links[tabOf(location.href)];
-            if (pill && from && to && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-              const dx = from.getBoundingClientRect().left - to.getBoundingClientRect().left;
-              const x = new DOMMatrix(getComputedStyle(pill).transform).m41;
-              pill.animate([{ transform: `translateX(${x + dx}px)` }, { transform: `translateX(${x}px)` }], {
-                duration: 320,
-                easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
-              });
-            }
-            e.viewTransition.finished.then(() => d.classList.remove('vt-tab'), () => d.classList.remove('vt-tab'));
+            e.viewTransition.types.add(back ? 'back' : 'forward');
           }
           const y = history.state?.y;
           if ((type === 'traverse' || type === 'reload') && typeof y === 'number') scrollTo(0, y);
           else if (!location.hash) scrollTo(0, 0);
-          if (!e.viewTransition || tab) return;
+          if (!e.viewTransition) return;
           const row = document.querySelector('.row-t.vt-keep');
           if (row && !seen(row)) {
             const r = row.getBoundingClientRect();
