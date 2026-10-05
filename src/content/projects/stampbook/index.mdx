@@ -18,7 +18,26 @@ hero:
   alt: "Stampbook open on a desktop: a map of north India with pins for Delhi, Jaipur and Kolkata on the left page, and a round red, a boxed blue and an octagonal green stamp on the visa page on the right"
 ---
 
+import Annotated from '../../../components/Annotated.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
+import phone from './phone.webp';
+import stamps from './stamps.webp';
+import tablet from './tablet.webp';
+
 <Project /> started in 2024 as Travel Journal, three trips written into the code as cards with a photo and a Google Maps link. The rebuild is a passport: a map on the left page, a visa page of entry stamps on the right, and everything you log kept on your own device.
+
+The book closes on a phone. The two pages become one, with the map on top and the stamps underneath, and an iPad gets the open passport like a desktop.
+
+<DeviceSwitch
+  ground="#1D2A47"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'Stampbook on an iPhone: the passport as one page, the map of north India on top and the three stamps underneath' },
+    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'Stampbook on an iPad in landscape: the passport open, map on the left page and stamps on the right' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'Stampbook on a desktop: the open passport with the map, the three stamps and the machine readable line' },
+  ]}
+  caption="The same passport three ways."
+/>
 
 ## One map, moved
 
@@ -65,6 +84,18 @@ export function design(trip) {
 ```
 
 `hash` is FNV-1a, a few lines that turn a string into a well mixed 32 bit number, and different slices of that number pick each part: red, blue or green, one of six shapes, a tilt between -8 and 8 degrees, a nudge off the grid, and a seed for the SVG noise that wears the ink. Edit a trip's dates or rename the place and it keeps the same stamp, because the id doesn't change. Reload, restore a backup on another phone, and it looks the same.
+
+<Annotated
+  src={stamps}
+  alt="the three sample stamps up close: a round red Delhi stamp, a boxed blue Kolkata stamp and an octagonal green Jaipur stamp with a filled band, each tilted a little differently, their ink worn and speckled"
+  caption="The three sample trips, at 3x."
+  marks={[
+    { x: 13.4, y: 4.6, w: 25.7, h: 41.1, note: 'Round and red: shape and ink both come from the hash' },
+    { x: 64, y: 8, w: 29.7, h: 33.6, note: 'Its own small tilt and nudge off the grid' },
+    { x: 12.4, y: 57.7, w: 29, h: 36.4, note: 'One of six shapes, the same one every time this trip is drawn' },
+    { x: 27.4, y: 66.7, note: 'Worn ink: SVG noise, seeded per trip' },
+  ]}
+/>
 
 The text on a stamp has to fit whatever the place is called. Stampbook doesn't measure it in the DOM. Barlow Condensed is narrow and even, so each character is taken as 0.47 of the font size wide, and the size comes out of one line of arithmetic, down to a floor of 8. If the line is still too long at 8, SVG's `textLength` squeezes it to the space. A new stamp drops in from 1.7 times its size, overshoots to 0.96 and settles, with a thud made from a tone falling from 140 to 55 Hz and two short bursts of noise.
 
