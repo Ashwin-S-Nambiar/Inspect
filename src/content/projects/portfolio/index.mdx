@@ -1,0 +1,144 @@
+---
+title: Portfolio
+dek: "The third version of my portfolio: one paragraph about me and a reel of things I built. No animation library, so the reel, the grid and the loading are all small bits of maths I can point at."
+date: 2026-10-05T22:30:00+05:30
+kind: project
+tags: [portfolio, react, motion]
+project:
+  name: Portfolio
+  icon: ../../../assets/projects/portfolio.png
+  about: "My portfolio, third version: one paragraph about me, a reel of things I built, and the stories behind them."
+  made: "2026"
+  live: https://v3.ashwin.co.in
+  repo: https://github.com/Ashwin-S-Nambiar/portfolio
+  stack: [React 19, React Router 8, Vite 8, TypeScript 7, Tailwind CSS 4]
+thumb: ./thumb.png
+hero:
+  image: ./hero.webp
+  alt: "The v3 portfolio on a desktop: a paragraph about me on the left with highlighted links to projects, labs, x and github, and a reel of project cards curving down the right side"
+---
+
+import Annotated from '../../../components/Annotated.astro';
+import Clip from '../../../components/Clip.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import masDesktop from './mas-desktop.webp';
+import masPhone from './mas-phone.webp';
+import masTablet from './mas-tablet.webp';
+import reelPoster from './reel.jpg';
+import reel from './reel.mp4';
+import slow from './slow.webp';
+
+<Project /> is the third version of my portfolio, at v3.ashwin.co.in. The home page is one paragraph about me and a reel of things I built, each card playing a recording of the real app. Projects and labs have their own pages, and every project gets an essay with figures.
+
+I started it on 25 August 2026, in React, TypeScript and Vite, and kept one rule from the start: no animation library. Every moving thing is a short function I can read, which is what this write-up is about.
+
+## A reel on a curve
+
+The cards ride down the right side of the page on a parabola. Each card's position along the run, from 0 at the top to 1 at the bottom, gives its pose:
+
+```ts
+const t = clamp01(p);
+const b = bulge(t);
+
+const slope = span > 0 ? (amp * bulgeSlope(t)) / span : 0;
+const rot = tilt * Math.atan(slope) * (180 / Math.PI);
+
+return {
+  perp: amp * b,
+  rot: Math.max(-maxRot, Math.min(maxRot, rot)),
+  scale: 1 + lift * b,
+};
+```
+
+`bulge` is `1 - 4(p - 0.5)²`, so a card sits furthest out at the middle of the screen. It banks to follow the curve's slope, at 45% of the true angle and never more than 9°, and grows by 6% at the top of the bulge. How far the curve bows out isn't fixed either: a 16 step binary search finds the largest bow whose rotated, scaled cards still fit the room beside the paragraph, so a narrow window gets a flatter curve rather than cards off the edge.
+
+The speed is set by the screen, not in pixels: a card takes 18 seconds to cross, however tall the window is. Cards that leave the run pause their video until they come back.
+
+## Slowing down when you look
+
+<Clip
+  src={reel}
+  poster={reelPoster}
+  length={12}
+  label="the home page reel on a desktop: the cursor moves onto the reel and the cards ease to a stop, then the cursor moves off and the reel eases back up to speed"
+  caption="At half speed."
+  cues={[
+    { from: 0.2, to: 2.0, text: 'A card crosses the screen in 18 seconds' },
+    { from: 2.0, to: 4.4, text: 'Pointer on the reel: its target speed drops to zero', x: 62, y: 0, w: 38, h: 100 },
+    { from: 4.4, to: 7.2, text: 'It eases down instead of stopping dead', x: 62, y: 0, w: 38, h: 100 },
+    { from: 7.2, to: 12, text: 'Pointer off: back up to speed the same way' },
+  ]}
+/>
+
+Rest the pointer on the reel and it slows to a stop, so you can read a card. The loop keeps one velocity and nudges it toward a target every frame:
+
+```ts
+const dt = Math.min(dtMs, MAX_FRAME_MS);
+const k = 1 - Math.exp(-dt / tau);
+velocity += (target() - velocity) * k;
+```
+
+The target is zero while held and the crossing speed otherwise, and `tau` is 260 ms. Because the step uses the real frame time, it eases the same on a 60 Hz and a 120 Hz screen, and the 50 ms cap stops a background tab from jumping the reel when it comes back.
+
+## Two strips on a phone
+
+A phone has no room beside the paragraph, so below 768 px wide, or under 560 px tall, the curve becomes two straight strips, one above the paragraph and one below, running at 30 px a second in opposite directions. Each strip holds its cards twice and moves by one period, so the loop never shows a seam.
+
+## Columns that know their heights
+
+The projects and labs pages are a masonry of clips and covers. The columns are worked out before any image loads, from aspect ratios kept in the data:
+
+```ts
+aspects.forEach((aspect, index) => {
+  const height = (aspect > 0 ? 1 / aspect : 1) + gutter;
+
+  let shortest = 0;
+  for (let c = 1; c < count; c++) {
+    if (heights[c]! < heights[shortest]! - 1e-9) shortest = c;
+  }
+
+  out[shortest]!.push(index);
+  heights[shortest]! += height;
+});
+```
+
+Each card goes to the shortest column, counting the gap under it as 7.5% of a column's width, and ties fill from the left. A phone recording is 1:2, so it takes a column's worth of height on its own. The number of columns comes from the width: four from 1240 px, three from 900, two from 500, and one below that, because two columns on a small phone leave a clip too small to read.
+
+<DeviceSwitch
+  ground="#FDFDFC"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: masPhone, alt: 'the projects page on an iPhone: one column, with the MovieVault phone recording first' },
+    { label: 'iPad', kind: 'tablet', src: masTablet, alt: 'the projects page on an iPad in landscape: three columns of project clips' },
+    { label: 'Desktop', kind: 'desktop', src: masDesktop, alt: 'the projects page on a desktop: four columns, the tall phone recordings balanced against the wide desktop ones' },
+  ]}
+  caption="The same nine projects in one, three and four columns."
+/>
+
+## A page before the app
+
+The site is rendered in the browser, so for a moment after a page arrives there's nothing to draw. Instead of a spinner, every route's HTML ships with its own page already inside it. At build time a Vite plugin renders each route from the real components, at several widths, strips the media out and turns the text into shimmer bars. Widths that came out the same are merged, and each version that's left is wrapped so it only shows inside its own width range. When the app starts, it replaces the skeleton with the real page, and since the skeleton came from the same components, nothing moves at any width.
+
+A small inline script drops the skeleton when the URL isn't the one it was built for, so a mistyped link doesn't flash the wrong page's shape on its way to the 404.
+
+## Pictures that wait 380 ms
+
+<Annotated
+  src={slow}
+  alt="the projects page while its media is still loading: every card is a soft blurred version of its picture in its final shape, the phone recordings as tall blurred rectangles"
+  caption="Every image held back for a minute, at 2x."
+  marks={[
+    { x: 3.0, y: 22.1, w: 22.3, h: 77.9, note: 'A blurred preview of the real picture, from a tiny placeholder made at build time' },
+    { x: 26.9, y: 22.1, w: 22.3, h: 22.3, note: 'The card already has its final shape, so nothing moves when the picture lands' },
+    { x: 50.8, y: 22.1, w: 22.3, h: 22.3, note: 'A soft sheen runs across while it waits' },
+  ]}
+/>
+
+Media that arrives within 380 ms, or comes from the cache, or lands off screen, just appears; anything that shows a placeholder for a split second looks like a flicker. Slower media shows a blurred preview of itself, made at build time and stored with the image's real size, and then sharpens in. A phone recording blurs as one picture with its frame, status bar and island, and a failed image keeps its blurred colours with a small image-off mark instead of the browser's broken icon.
+
+That last part had a bug until today. While a phone clip loads, its screen is allowed to spill past its rounded corners so the blur can bleed out softly. That was switched back off only when a clip ended up "ready", and a clip that landed late, while you were watching, ended up "slow" instead. So on a slow connection the screen never got its corners back, and the red of a film poster showed as a thin line down the edge of the phone. The spill now only applies while loading or after an error.
+
+## Rough edges
+
+- **The recordings stay light.** The site follows your system into dark mode, but the clips were recorded in light mode, so they glow on a dark page.
+- **Client rendered.** The skeletons, titles and metadata are written at build time, but the page itself needs JavaScript.
+- **One reel, one speed.** Holding the reel is the only control; there's no way to scrub it.
