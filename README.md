@@ -92,7 +92,7 @@ production indexing is configured for `inspect.ashwin.co.in`; vercel sends `noin
 
 ### writing a post
 
-a write-up is a folder in [`src/content/projects`](src/content/projects), a note one in [`src/content/notes`](src/content/notes), each with an `index.mdx` and its media beside it. how a write-up is planned, written and captured is in [`docs/project-write-ups.md`](docs/project-write-ups.md).
+a write-up is a folder in [`src/content/projects`](src/content/projects), a note one in [`src/content/notes`](src/content/notes), each with an `index.mdx` and its media beside it. how a write-up is planned, written and captured lives in the `inspect-project` skill.
 
 ```yaml
 ---
