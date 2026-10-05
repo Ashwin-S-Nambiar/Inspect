@@ -56,6 +56,8 @@ hero:
 
 ## Figures
 
+**Before/after is the exception, not a template slot.** Use `Compare` or `ClipCompare` only when the change itself is the story and can't be said in a sentence (Tenzies: flat squares to 3D dice). Most projects get none. Inspect never gets one: it would be Inspect inside Inspect, and the BlogSpace and riso-era history stays out of the blog.
+
 Use a figure only when the reader would miss something without it, and build a new component only when a write-up needs it. Every figure sits beside the paragraph that talks about it; no screenshot gallery at the end. Don't reuse portfolio media as is; a write-up figure has to add something (a comparison, marks, cues).
 
 | Need | Component | Notes |
