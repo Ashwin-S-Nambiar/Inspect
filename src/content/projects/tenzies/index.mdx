@@ -1,0 +1,142 @@
+---
+title: Tenzies
+dek: A dice game I first built while learning React, rebuilt as a dice tray. The rules are the same. The dice are real, every hold is a commitment, and the game tells you where you stand before you roll.
+date: 2026-10-05T10:00:00+05:30
+kind: project
+tags: [tenzies, three-js, motion]
+project:
+  name: Tenzies
+  icon: ../../../assets/projects/tenzies.svg
+  about: "Roll ten dice, hold the ones that match and roll the rest until all ten show the same number, in as few rolls as you can."
+  made: 2024, rebuilt in 2026
+  live: https://tenzies.ashwin.co.in
+  repo: https://github.com/Ashwin-S-Nambiar/Tenzies
+  stack: [React 19, three.js, Tailwind CSS 4, Motion]
+thumb: ./thumb.png
+hero:
+  image: ./win.webp
+  alt: "Tenzies on a desktop after a win: all ten dice ivory on fours on petrol green felt, six rolls in 54 seconds, a new best, and a play again button"
+---
+
+import Annotated from '../../../components/Annotated.astro';
+import ClipCompare from '../../../components/ClipCompare.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
+import phone from './phone.webp';
+import tablet from './tablet.webp';
+import oldRoll from './roll-v1.mp4';
+import oldPoster from './roll-v1.jpg';
+import newRoll from './roll-v2.mp4';
+import newPoster from './roll-v2.jpg';
+import warn from './warn.webp';
+
+<Project /> is ten dice. You hold the ones that match and roll the rest until all ten show the same number, and fewer rolls is better. I first built it in 2024 as a React exercise, and gave it a darker coat in early 2025: flat red squares on a black grid, pips that scrambled when you rolled, and a held die that turned white.
+
+It worked, and it looked like a form. This rebuild keeps the rules and changes everything around them.
+
+## A dice tray
+
+The page is now the felt of a dice tray: deep petrol green with a fine grain and a soft vignette, edge to edge. I kept two things from before. The dice are still casino red with ivory pips, and a held die still changes colour, now ivory with ink pips instead of plain white.
+
+The bigger change is that the dice are dice. Each one is a rounded cube in three.js, lit from the top left, with its shadow falling down and to the right on the felt. Getting ten of them to look like they lie [on the same green table](/notes/dice-on-the-felt/) was most of the work.
+
+<ClipCompare
+  before={{ src: oldRoll, poster: oldPoster, label: '2025' }}
+  after={{ src: newRoll, poster: newPoster, label: '2026' }}
+  length={4.6}
+  label="the same move in both versions: three fours held, then a roll. On the left the flat dice scramble their pips in place and a rolls bar pushes the board down. On the right the loose dice tumble in 3D and land while the held fours stay still"
+  caption="Three fours held, then one roll, in both versions. Drag the line to compare. Watch the old board jump when its roll counter appears."
+/>
+
+A roll used to swap the pips on a flat square. Now the loose dice leave one after another, 26 ms apart, lift off the felt, turn past their new face and settle back onto it. Held dice don't move.
+
+## The rule that was already there
+
+I thought the rebuild added a rule: once you roll, the dice you held stay held. Reading the old code again, it was already there. Rolling moved every held die into a locked set, and a locked die ignored taps. What the old game never did was tell you. Lock a two next to your fours on the second roll and you could keep rolling for another ten turns. You only lost once all ten dice were held and they didn't match, long after the mistake.
+
+So the rules moved into small pure functions, and the check now runs on every move, not just at the end:
+
+```js
+function settle(game) {
+  const keep = kept(game);
+  if (keep.length === COUNT && values(keep).length === 1) {
+    return { ...game, status: 'won' };
+  }
+  if (values(game.dice.filter((d) => d.locked)).length > 1) {
+    return { ...game, status: 'lost' };
+  }
+  return game;
+}
+```
+
+The second `if` ends the game on the roll that locks a mismatch. That would be harsh with nothing on screen, so the line under the dice reads the same state before you roll. Most of the time it just counts: "5 of 10 on fours. Roll the other 5." Hold a die that doesn't match and it warns you instead, and the button turns into Roll anyway.
+
+<Annotated
+  src={warn}
+  alt="Tenzies mid game: five fours held for good in ivory and a two just held, the line under the dice warning that the held dice don't match, and the button reading roll anyway"
+  caption="A two held next to five locked fours."
+  marks={[
+    { x: 25.2, y: 18.7, w: 14.1, h: 18.2, note: 'Held this turn, so it can still be let go' },
+    { x: 7.4, y: 18.7, w: 14.1, h: 18.2, note: 'Held on an earlier roll, so it stays' },
+    { x: 37.4, y: 66.8, w: 25, h: 7.2, note: 'The line warns instead of counting' },
+    { x: 31.8, y: 81.6, w: 36.4, h: 8.2, note: 'Roll turns into Roll anyway' },
+  ]}
+/>
+
+The loss isn't announced on the click. The roll is already in the air, so the shake, the red ring, the low two-note sound and the buzz wait until the last loose die has landed, about 576 ms plus 26 ms for every die that moved. The result arrives when the dice do.
+
+## Keeping time
+
+The old version counted rolls and nothing else. A clock is easy to get wrong, because a tab in the background keeps counting. Here the game stores the milliseconds already played plus the moment the current stretch started. The clock on screen adds the two together, and the stored number only changes when the stretch ends:
+
+```js
+document.addEventListener('visibilitychange', () => {
+  if (visible()) {
+    resume(gameStore.get());
+  } else {
+    commit();
+    runStart = null;
+  }
+});
+addEventListener('pagehide', commit);
+```
+
+Leave the tab and the time you played is written down and the clock stops. Close it mid game and the same write keeps your place. A saved game is checked field by field before it's restored, so an old or broken save starts a fresh game instead of a broken board. And pressing N mid game doesn't just throw it away. It says "Dropped the last one at 4 rolls" with an Undo, which puts the old game back exactly as it was.
+
+## One screen at every size
+
+The game never scrolls, from a 320 px phone to a 2560 px monitor. That shaped the layout more than anything else. On a phone Roll sits at the bottom where your thumb is. On a short landscape phone there's no room for two rows, so the ten dice line up in one.
+
+<DeviceSwitch
+  ground="#1a4c4e"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'Tenzies on an iPhone mid game: the tally, two rows of five dice with five fours held, the hint line, and roll at the bottom of the screen' },
+    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'the same game on an iPad in landscape: larger dice in two rows of five with the roll button under the hint line' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'the same game on a desktop: large dice in two rows of five, with the keyboard shortcuts listed under the roll button' },
+  ]}
+  caption="The same game three ways. Only the arrangement changes."
+/>
+
+On a computer the keys are listed under the button: Space rolls or starts again, 1 to 0 hold dice one to ten, and N starts a new game with undo.
+
+## Nothing jumps
+
+In the old version the board moved the moment you first rolled, because the roll counter only appeared then and pushed everything down. Here every piece that changes has a fixed box. The counters are fixed width, which is [the same one line fix](/notes/three-rules-for-a-rolling-number/) as the odometer in my labs. The hint line is sized for its longest message, and undo and copied score messages borrow that same space instead of opening a toast on top. Buttons that come and go swap in place.
+
+I checked it by recording every layout shift while a script played a whole game. It stays at 0, on load and while you play.
+
+## Sounds without files
+
+There are no audio files. Every sound is built in the Web Audio API from one second of white noise and a few oscillators. A die hitting the table is a "clack": 35 ms of noise through a narrow band pass somewhere between 2.6 and 4.4 kHz, with a tiny falling triangle tone under it. Everything else is clacks arranged in time.
+
+A roll is three layers. A soft 340 ms rattle of filtered noise, up to sixteen clacks scattered through it for dice knocking in the air, and then one clack per die at 340 ms, 28 ms apart, so the landings line up with the dice touching down. A win is a C major arpeggio over ten quick clacks, roughly one for each die as the wave goes past.
+
+Nothing plays before your first tap, since browsers won't start audio before then anyway. Nothing plays in a hidden tab either, and the session is marked ambient so the iPhone's silent switch mutes it. On Android each sound has a matching buzz: 8 ms for a hold, 4 ms for a release, and a short three-pulse pattern for a win.
+
+## Rough edges
+
+- **The dice need WebGL.** Without it you get flat dice that play the same but don't tumble.
+- **three.js is most of the download.** It's about 258 KB gzipped for the whole app, and it can't load lazily because the dice have to be on the very first frame.
+- **Your games stay on one device.** Clearing site data clears them.
+
+A daily board where everyone starts from the same first roll is the next thing I'd like to add.
