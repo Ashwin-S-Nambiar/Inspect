@@ -68,12 +68,17 @@ Use a figure only when the reader would miss something without it, and build a n
 | Explaining a state | `Annotated` | marks point at what the text names; 3 to 5 marks |
 | A sequence that moves | `Clip` | cues, optionally a track; slowed if it lasts under a second |
 | The same screen at different sizes | `DeviceSwitch` | iPhone, iPad and Desktop only when the layouts really differ |
+| A detail up close | `Annotated` on a tight crop at 3x | a stamp, a release, a dice face: marks explain what decides each part |
 | A live demo | `components/demos/*` | only when touching it teaches more than watching |
 | A side remark | `Aside` | sparingly |
 
 Not built yet, build when a project needs it: a spec strip (palette swatches, type specimen, shortcuts) and sidenotes.
 
 ### DeviceSwitch and DeviceFrame
+
+- Most app write-ups get one, near the start, with a sentence on how the phone layout differs. Skip it when the portfolio already shows the same widths side by side (Redline).
+- The status bar ink follows `ground`: dark ink on light screens, light ink on dark ones.
+- The home indicator stays on both iPhone and iPad; it's on screen in every app on both.
 
 - `kind: 'phone' | 'tablet' | 'desktop'`. iPhone and iPad use the v3 lab frame geometry; desktop is a plain screenshot with no shell.
 - Pass `ground` as the app's background colour so the status bar and safe areas match.
@@ -103,6 +108,12 @@ Capture from local builds, never the live site, with real app state:
 - Measure mark boxes from element rects in the same crop, as percentages.
 - Stills to WebP with `cwebp -q 84 -m 6 -sharp_yuv`. Posters from the first frame of the MP4.
 - Review frames on a contact sheet before using a clip.
+- Posters are the clip's first frame, so make that frame a finished screen: let data load before recording starts, never record a page mid fade-in.
+- Park the cursor on empty space. Hovering cards can prefetch, which changes what the app does next.
+- When an app judges health from recent successes (MovieVault's 10 s grace), let that window pass before failing requests on purpose, and block the whole API rather than one endpoint.
+- Phone layouts often hide controls in sheets. Set state up on desktop, save `storageState`, and open every size from it.
+- Quote a `dek` that contains `: ` so the YAML (and `docs/render-og.py`) parses it.
+- `render-og.py` redraws every card; restore cards whose post didn't change instead of committing byte noise.
 
 ## Per project checklist
 
