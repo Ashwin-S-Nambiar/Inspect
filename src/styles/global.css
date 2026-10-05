@@ -25,6 +25,39 @@
   --mono: var(--font-mono);
   --out: cubic-bezier(0.23, 1, 0.32, 1);
   --drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --spring: linear(
+    0,
+    0.027,
+    0.096,
+    0.188,
+    0.293,
+    0.4,
+    0.503,
+    0.598,
+    0.684,
+    0.758,
+    0.82,
+    0.872,
+    0.913,
+    0.946,
+    0.971,
+    0.989,
+    1.002,
+    1.011,
+    1.016,
+    1.019,
+    1.02,
+    1.02,
+    1.018,
+    1.016,
+    1.014,
+    1.012,
+    1.01,
+    1.008,
+    1.007,
+    1.005,
+    1
+  );
   --col: 620px;
   --gutter: 20px;
   --astro-code-foreground: var(--strong);
@@ -1050,15 +1083,11 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 
 .bar .filters {
   margin: 0;
-  transition: opacity 220ms var(--out) 130ms;
 }
 
-.bar .filters[inert] {
+.bar .filters[inert]:not(.leaving),
+.panel[inert]:not(.leaving) {
   visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity 120ms ease-in,
-    visibility 0s linear 120ms;
 }
 
 .sections {
@@ -1159,15 +1188,6 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 .panel {
   grid-area: 1 / 1;
   min-width: 0;
-  transition: opacity 220ms var(--out) 130ms;
-}
-
-.panel[inert] {
-  visibility: hidden;
-  opacity: 0;
-  transition:
-    opacity 120ms ease-in,
-    visibility 0s linear 120ms;
 }
 
 .panel[inert] .row-link,
@@ -1176,7 +1196,7 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 }
 
 .pill {
-  transition: transform 320ms cubic-bezier(0.23, 1, 0.32, 1);
+  transition: transform 520ms var(--spring);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1194,6 +1214,14 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 .fade.wait {
   opacity: 0;
   filter: blur(14px);
+}
+
+.fade.quick {
+  transition: opacity 180ms var(--out);
+}
+
+.fade.quick.wait {
+  filter: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

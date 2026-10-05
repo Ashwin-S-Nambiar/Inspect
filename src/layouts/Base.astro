@@ -103,7 +103,16 @@ const home = Astro.url.pathname === '/';
           for (const t of heroes()) if (!seen(t)) t.classList.add('vt-solo');
         });
         addEventListener('pagehide', save);
+        let restored = false;
+        addEventListener('pageshow', (e) => {
+          restored = e.persisted;
+        });
         addEventListener('pagereveal', (e) => {
+          if (restored && e.viewTransition) {
+            restored = false;
+            e.viewTransition.skipTransition();
+            return;
+          }
           if (e.viewTransition) d.classList.add('ready', 'instant');
           if (!managed) return;
           const act = navigation.activation;
@@ -173,12 +182,35 @@ const home = Astro.url.pathname === '/';
     </div>
     <script is:inline>
       (() => {
+        let seen = [];
+        try {
+          seen = JSON.parse(sessionStorage.getItem('inspect:seen') || '[]');
+        } catch {}
+        const known = new Set(seen);
+        const remember = (src) => {
+          if (!src || known.has(src)) return;
+          known.add(src);
+          try {
+            sessionStorage.setItem('inspect:seen', JSON.stringify([...known].slice(-400)));
+          } catch {}
+        };
         const hold = (el, img) => {
-          if (img.complete && img.naturalWidth) return;
+          const src = img.getAttribute('src');
+          if (img.complete && img.naturalWidth) {
+            remember(src);
+            return;
+          }
           el.classList.add('fade', 'wait');
-          const done = () => el.classList.remove('wait');
-          img.addEventListener('load', done, { once: true });
-          img.addEventListener('error', done, { once: true });
+          if (known.has(src)) el.classList.add('quick');
+          img.addEventListener(
+            'load',
+            () => {
+              remember(src);
+              el.classList.remove('wait');
+            },
+            { once: true },
+          );
+          img.addEventListener('error', () => el.classList.remove('wait'), { once: true });
         };
         for (const img of document.querySelectorAll('main img')) hold(img, img);
         for (const v of document.querySelectorAll('main video[poster]')) {
