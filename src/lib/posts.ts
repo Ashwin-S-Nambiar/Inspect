@@ -7,6 +7,29 @@ export async function allPosts() {
   return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 }
 
+export type Section = 'projects' | 'notes';
+
+export const sectionOf = (post: Post): Section =>
+  post.id.startsWith('projects/') ? 'projects' : 'notes';
+
+export const slugOf = (post: Post) => post.id.slice(post.id.indexOf('/') + 1);
+
+export const href = (post: Post) => `/${post.id}/`;
+
+export async function inSection(section: Section) {
+  return (await allPosts()).filter((p) => sectionOf(p) === section);
+}
+
+export async function notesFor(project: Post) {
+  const slug = slugOf(project);
+  return (await inSection('notes')).filter((p) => p.data.tags.includes(slug));
+}
+
+export async function writeUpFor(name?: string) {
+  if (!name) return undefined;
+  return (await inSection('projects')).find((p) => p.data.project?.name === name);
+}
+
 export function words(post: Post) {
   const text = (post.body ?? '')
     .replace(/```[\s\S]*?```/g, ' ')
@@ -67,7 +90,7 @@ export const tagName = (t: string) => tagNames[t] ?? t.replace(/-/g, ' ');
 export const tagLabel = (t: string) =>
   tagNames[t] ?? t[0].toUpperCase() + t.slice(1).replace(/-/g, ' ');
 
-const clips = import.meta.glob<string>('/src/content/posts/**/*.mp4', {
+const clips = import.meta.glob<string>('/src/content/*/*/*.mp4', {
   eager: true,
   import: 'default',
   query: '?url',
@@ -75,5 +98,5 @@ const clips = import.meta.glob<string>('/src/content/posts/**/*.mp4', {
 
 export function clipUrl(post: Post, file?: string) {
   if (!file) return undefined;
-  return clips[`/src/content/posts/${post.id}/${file.replace(/^\.\//, '')}`];
+  return clips[`/src/content/${post.id}/${file.replace(/^\.\//, '')}`];
 }

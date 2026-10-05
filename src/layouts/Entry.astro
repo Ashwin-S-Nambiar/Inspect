@@ -1,21 +1,14 @@
 ---
 import { render } from 'astro:content';
-import CodeCard from '../../components/CodeCard.astro';
-import Hero from '../../components/Hero.astro';
-import ProjectLink from '../../components/ProjectLink.astro';
-import Related from '../../components/Related.astro';
-import cards from '../../lib/og-cards.json';
-import Base from '../../layouts/Base.astro';
-import { allPosts, formatDate, kindLabel, type Post, readTime, vt } from '../../lib/posts';
-import '../../styles/post.css';
-
-export async function getStaticPaths() {
-  const posts = await allPosts();
-  return posts.map((post, i) => ({
-    params: { id: post.id },
-    props: { post, newer: posts[i - 1], older: posts[i + 1] },
-  }));
-}
+import CodeCard from '../components/CodeCard.astro';
+import Hero from '../components/Hero.astro';
+import ProjectLink from '../components/ProjectLink.astro';
+import Related from '../components/Related.astro';
+import cards from '../lib/og-cards.json';
+import Rows from '../components/Rows.astro';
+import { formatDate, href, kindLabel, notesFor, type Post, readTime, sectionOf, vt, writeUpFor } from '../lib/posts';
+import Base from './Base.astro';
+import '../styles/post.css';
 
 interface Props {
   post: Post;
@@ -30,7 +23,12 @@ const sections = headings.filter((h) => h.depth === 2);
 const { title, dek, date, updated, kind, project, hero } = post.data;
 const name = vt(post);
 const minutes = readTime(post);
+const section = sectionOf(post);
+const writeUp = section === 'notes' ? await writeUpFor(project?.name) : undefined;
+const notes = section === 'projects' ? await notesFor(post) : [];
+const home = section === 'projects' ? { href: '/', label: 'All projects' } : { href: '/notes/', label: 'All notes' };
 Astro.locals.project = project;
+Astro.locals.writeUp = writeUp && href(writeUp);
 const links = project && [
   project.live && { href: project.live, label: 'Live' },
   project.repo && { href: project.repo, label: 'Source' },
@@ -49,9 +47,9 @@ const links = project && [
       </ol>
     </nav>
   )}
-  <a class="back" href="/" data-in style="--i:1">
+  <a class="back" href={home.href} data-home={home.href} data-in style="--i:1">
     <svg class="ic" aria-hidden="true"><use href="#i-back"></use></svg>
-    All writing
+    {home.label}
   </a>
   <article>
     <header>
@@ -59,14 +57,18 @@ const links = project && [
       <p class="byline" data-in style="--i:2">
         <time datetime={date.toISOString()}>{formatDate(date)}</time>
         {updated && <span>Revised {formatDate(updated)}</span>}
-        <span>{kindLabel(kind)}</span>
+        {kind !== 'project' && <span>{kindLabel(kind)}</span>}
         <span>{minutes} min read</span>
       </p>
       <p class="dek" data-in style="--i:3">{dek}</p>
       {hero && <Hero post={post} hero={hero} />}
       {project && (
         <dl class:list={['facts', { two: !links?.length }]} data-in style="--i:5">
-          <div><dt>Project</dt><dd>{project.name}</dd></div>
+          {section === 'projects' ? (
+            project.made && <div><dt>Made</dt><dd>{project.made}</dd></div>
+          ) : (
+            <div><dt>Project</dt><dd>{writeUp ? <a href={href(writeUp)}>{project.name}</a> : project.name}</dd></div>
+          )}
           {project.stack.length > 0 && <div><dt>Stack</dt><dd>{project.stack.join(', ')}</dd></div>}
           {links && links.length > 0 && (
             <div>
@@ -87,17 +89,23 @@ const links = project && [
     <div class="prose" data-in style="--i:6">
       <Content components={{ pre: CodeCard, Project: ProjectLink }} />
     </div>
+    {notes.length > 0 && (
+      <section class="more" aria-labelledby="notes-h">
+        <h2 class="sect" id="notes-h">Notes on {project?.name ?? title} <span>{notes.length}</span></h2>
+        <Rows posts={notes} />
+      </section>
+    )}
     {post.data.related.length > 0 && <Related items={post.data.related} />}
     {(newer || older) && (
-      <nav class="pager" aria-label="More writing">
+      <nav class="pager" aria-label={section === 'projects' ? 'More projects' : 'More notes'}>
         {newer && (
-          <a class="prev" href={`/posts/${newer.id}/`}>
+          <a class="prev" href={href(newer)}>
             <span>Newer</span>
             <b>{newer.data.title}</b>
           </a>
         )}
         {older && (
-          <a class="next" href={`/posts/${older.id}/`}>
+          <a class="next" href={href(older)}>
             <span>Older</span>
             <b>{older.data.title}</b>
           </a>
@@ -145,12 +153,12 @@ const links = project && [
         const url = entries[i].url ? new URL(entries[i].url as string) : undefined;
         if (!url || url.origin !== location.origin) return;
         if (url.pathname === location.pathname) continue;
-        return url.pathname === '/' || url.pathname.startsWith('/tags/') ? { entry: entries[i], path: url.pathname } : undefined;
+        return url.pathname === '/' || url.pathname === '/notes/' || url.pathname.startsWith('/tags/') ? { entry: entries[i], path: url.pathname } : undefined;
       }
     };
     if (back && nav) {
       const sync = () => {
-        back.href = origin()?.path ?? '/';
+        back.href = origin()?.path ?? back.dataset.home ?? '/';
       };
       sync();
       addEventListener('pageshow', sync);

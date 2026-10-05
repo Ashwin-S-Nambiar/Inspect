@@ -1,10 +1,10 @@
 ---
 import PostList from '../components/PostList.astro';
 import Base from '../layouts/Base.astro';
-import { allPosts } from '../lib/posts';
+import { inSection } from '../lib/posts';
 import { site } from '../site';
 
-const posts = await allPosts();
+const posts = await inSection('projects');
 ---
 
 <Base
@@ -18,5 +18,5 @@ const posts = await allPosts();
       project pages leave out.
     </p>
   </section>
-  <PostList posts={posts} />
+  <PostList posts={posts} section="projects" />
 </Base>

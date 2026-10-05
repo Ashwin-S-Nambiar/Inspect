@@ -1,6 +1,6 @@
 import rss from '@astrojs/rss';
 import type { APIContext } from 'astro';
-import { allPosts } from '../lib/posts';
+import { allPosts, href } from '../lib/posts';
 
 export async function GET(context: APIContext) {
   const posts = await allPosts();
@@ -13,7 +13,7 @@ export async function GET(context: APIContext) {
       description: post.data.dek,
       pubDate: post.data.date,
       categories: post.data.tags,
-      link: `/posts/${post.id}/`,
+      link: href(post),
     })),
   });
 }
