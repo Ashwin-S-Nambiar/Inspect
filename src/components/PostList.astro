@@ -54,9 +54,9 @@ const headings = { projects: 'Projects', notes: 'Notes' };
       </nav>
       {filters.length > 0 && (
         <nav class="filters" aria-label="Filter notes by tag" data-filters inert={section !== 'notes'}>
-          <a class="chip" href="/notes/" data-filter="" aria-current="page">All</a>
+          <a class="chip" href="/notes/" data-filter="" aria-label="All notes" aria-current="page">All</a>
           {filters.map((f) => (
-            <a class="chip" href={`/notes/?tag=${f}`} data-filter={f}>{tagLabel(f)}</a>
+            <a class="chip" href={`/notes/?tag=${f}`} data-filter={f} aria-label={`${tagLabel(f)} notes`}>{tagLabel(f)}</a>
           ))}
         </nav>
       )}
@@ -79,6 +79,14 @@ const headings = { projects: 'Projects', notes: 'Notes' };
         const OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
         const tabs = [...nav.querySelectorAll('a[data-tab]')];
         const panels = [...box.querySelectorAll('[data-panel]')];
+        const prioritize = () => {
+          for (const panel of panels) {
+            for (const img of panel.querySelectorAll('.row-th img')) {
+              const r = img.getBoundingClientRect();
+              img.loading = !panel.inert && r.height > 0 && r.top + scrollY < innerHeight ? 'eager' : 'lazy';
+            }
+          }
+        };
         const notes = box.querySelector('[data-panel="notes"]');
         const chipBar = document.querySelector('[data-filters]');
         const chips = chipBar ? [...chipBar.querySelectorAll('[data-filter]')] : [];
@@ -147,6 +155,7 @@ const headings = { projects: 'Projects', notes: 'Notes' };
             li.hidden = Boolean(tag) && !li.dataset.tags.split(' ').includes(tag);
           }
           if (box.offsetHeight < before) box.style.minHeight = `${before}px`;
+          prioritize();
         };
         const mark = (tag) => {
           for (const c of chips) {
@@ -189,6 +198,7 @@ const headings = { projects: 'Projects', notes: 'Notes' };
             for (const a of out) a.cancel();
           });
           to.inert = false;
+          prioritize();
           enter(rowsOf(to), { dx: 24 * dir, delay: 140 });
           if (!chipBar) return;
           if (tab === 'notes') {
@@ -244,6 +254,9 @@ const headings = { projects: 'Projects', notes: 'Notes' };
           mark(now.tag);
           apply(now.tag);
         }
+        prioritize();
+        addEventListener('resize', prioritize);
+        addEventListener('pagereveal', prioritize);
       })();
     </script>
   </>
