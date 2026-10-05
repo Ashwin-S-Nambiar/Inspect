@@ -14,6 +14,16 @@ interface Props {
 }
 
 const { kind, src, alt, ground = '#111', time = '9:41', date = 'Mon Oct 5' } = Astro.props;
+const light = (() => {
+  const m = /^#?([0-9a-f]{6})$/i.exec(ground);
+  if (!m) return false;
+  const n = Number.parseInt(m[1], 16);
+  const ch = [n >> 16, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2] > 0.4;
+})();
 
 const SPECS = {
   phone: { w: 390, h: 844, rim: 6, bezel: 8, radius: 62 },
@@ -53,7 +63,7 @@ const sizes = kind === 'phone' ? '220px' : '(max-width: 660px) 100vw, 620px';
       <div class="shell" style={{ borderRadius: k(shell), padding: k(spec.rim) }}>
         <div class="bezel" style={{ borderRadius: k(bezelR), padding: k(spec.bezel) }}>
           {kind === 'tablet' && <span class="lens" style={{ top: k(spec.bezel / 2 - 5), left: `calc(50% - ${k(5)})`, width: k(10), height: k(10) }}></span>}
-          <div class:list={['screen', kind]} style={{ borderRadius: k(screenR) }}>
+          <div class:list={['screen', kind, { light }]} style={{ borderRadius: k(screenR) }}>
             {kind === 'phone' && (
               <>
                 <span class="island" style={{ top: k(ISLAND.top), left: '50%', width: k(ISLAND.w), height: k(ISLAND.h), translate: '-50% 0' }}></span>
@@ -157,6 +167,10 @@ const sizes = kind === 'phone' ? '220px' : '(max-width: 660px) 100vw, 620px';
     overflow: hidden;
     background: var(--ground);
     color: #f5f5f7;
+  }
+
+  .screen.light {
+    color: #111;
   }
 
   .screen::after {
