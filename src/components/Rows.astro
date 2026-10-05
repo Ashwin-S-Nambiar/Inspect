@@ -15,7 +15,7 @@ const { posts, start = 5 } = Astro.props;
   {posts.map((p, i) => {
     const thumb = p.data.thumb ?? p.data.hero?.image;
     return (
-      <li class="row" data-in style={`--i:${Math.min(i, 8) + start}`}>
+      <li class="row" data-in data-tags={p.data.tags.join(' ')} style={`--i:${Math.min(i, 8) + start}`}>
         <a class="row-link" href={href(p)} style={`view-transition-name: row-${vt(p)}; view-transition-class: row`}>
           {site.thumbs && (
             <span class="row-th" aria-hidden="true">
