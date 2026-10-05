@@ -144,6 +144,11 @@
     background-color 150ms ease;
 }
 
+.toc.still a,
+.toc.still a::before {
+  transition: none;
+}
+
 .toc a[aria-current="true"] {
   color: var(--strong);
 }

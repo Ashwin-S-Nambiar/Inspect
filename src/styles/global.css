@@ -1186,9 +1186,22 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 }
 
 .fade {
-  transition: opacity 240ms var(--out);
+  transition:
+    opacity 480ms var(--out),
+    filter 480ms var(--out);
 }
 
 .fade.wait {
   opacity: 0;
+  filter: blur(14px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade {
+    transition: opacity 240ms var(--out);
+  }
+
+  .fade.wait {
+    filter: none;
+  }
 }
