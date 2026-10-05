@@ -37,32 +37,34 @@ const headings = { projects: 'Projects', notes: 'Notes' };
   </>
 ) : (
   <>
-    <nav class="sections" aria-label="Sections" data-sections data-in style={`--i:3; --at:${section === 'notes' ? 1 : 0}`}>
-      <span class="pill" aria-hidden="true"></span>
-      {(['projects', 'notes'] as const).map((s) => (
-        <a
-          href={s === 'projects' ? '/' : '/notes/'}
-          data-tab={s}
-          data-title={titles[s]}
-          aria-current={s === section ? 'page' : undefined}
-        >
-          <span class="sec-l">{headings[s]}</span>
-          <span class="sec-n">{lists[s].length}</span>
-        </a>
-      ))}
-    </nav>
+    <div class="bar" data-in style="--i:3">
+      <nav class="sections" aria-label="Sections" data-sections style={`--at:${section === 'notes' ? 1 : 0}`}>
+        <span class="pill" aria-hidden="true"></span>
+        {(['projects', 'notes'] as const).map((s) => (
+          <a
+            href={s === 'projects' ? '/' : '/notes/'}
+            data-tab={s}
+            data-title={titles[s]}
+            aria-current={s === section ? 'page' : undefined}
+          >
+            <span class="sec-l">{headings[s]}</span>
+            <span class="sec-n">{lists[s].length}</span>
+          </a>
+        ))}
+      </nav>
+      {filters.length > 0 && (
+        <nav class="filters" aria-label="Filter notes by tag" data-filters inert={section !== 'notes'}>
+          <a class="chip" href="/notes/" data-filter="" aria-current="page">All</a>
+          {filters.map((f) => (
+            <a class="chip" href={`/notes/?tag=${f}`} data-filter={f}>{tagLabel(f)}</a>
+          ))}
+        </nav>
+      )}
+    </div>
     <h2 class="sr" data-heading>{headings[section]}</h2>
     <div class="panels" data-panels>
       {(['projects', 'notes'] as const).map((s) => (
         <div class="panel" data-panel={s} inert={s !== section}>
-          {s === 'notes' && filters.length > 0 && (
-            <nav class="filters" aria-label="Filter notes by tag" data-in style="--i:4">
-              <a class="chip" href="/notes/" data-filter="" aria-current="page">All</a>
-              {filters.map((f) => (
-                <a class="chip" href={`/notes/?tag=${f}`} data-filter={f}>{tagLabel(f)}</a>
-              ))}
-            </nav>
-          )}
           <Rows posts={lists[s]} />
         </div>
       ))}
@@ -75,7 +77,11 @@ const headings = { projects: 'Projects', notes: 'Notes' };
         const tabs = [...nav.querySelectorAll('a[data-tab]')];
         const panels = [...box.querySelectorAll('[data-panel]')];
         const notes = box.querySelector('[data-panel="notes"]');
-        const chips = [...box.querySelectorAll('[data-filter]')];
+        const chipBar = document.querySelector('[data-filters]');
+        const chips = chipBar ? [...chipBar.querySelectorAll('[data-filter]')] : [];
+        const list = notes.querySelector('.list');
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+        let fading;
         const heading = document.querySelector('[data-heading]');
         const notesTab = tabs.find((a) => a.dataset.tab === 'notes');
         const known = chips.map((c) => c.dataset.filter);
@@ -84,28 +90,47 @@ const headings = { projects: 'Projects', notes: 'Notes' };
           const tag = tab === 'notes' ? url.searchParams.get('tag') ?? '' : '';
           return { tab, tag: known.includes(tag) ? tag : '' };
         };
-        const filter = (tag) => {
+        const apply = (tag) => {
           const before = box.offsetHeight;
-          for (const c of chips) {
-            if (c.dataset.filter === tag) c.setAttribute('aria-current', 'page');
-            else c.removeAttribute('aria-current');
-          }
           for (const li of notes.querySelectorAll('.row')) {
             li.hidden = Boolean(tag) && !li.dataset.tags.split(' ').includes(tag);
           }
           if (box.offsetHeight < before) box.style.minHeight = `${before}px`;
+        };
+        const filter = (tag, animate) => {
+          for (const c of chips) {
+            if (c.dataset.filter === tag) c.setAttribute('aria-current', 'page');
+            else c.removeAttribute('aria-current');
+          }
           notesTab.href = tag ? `/notes/?tag=${tag}` : '/notes/';
+          fading?.cancel();
+          if (!animate || notes.inert || reduced.matches) {
+            apply(tag);
+            return;
+          }
+          fading = list.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'ease-in', fill: 'forwards' });
+          fading.finished.then(
+            () => {
+              apply(tag);
+              fading.cancel();
+              fading = list.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' });
+            },
+            () => {},
+          );
         };
         const show = ({ tab, tag }) => {
+          document.documentElement.classList.add('instant');
+          const tabbing = notes.inert === (tab === 'notes');
           nav.style.setProperty('--at', tab === 'notes' ? '1' : '0');
           for (const a of tabs) {
             if (a.dataset.tab === tab) a.setAttribute('aria-current', 'page');
             else a.removeAttribute('aria-current');
           }
           for (const p of panels) p.inert = p.dataset.panel !== tab;
+          if (chipBar) chipBar.inert = tab !== 'notes';
           if (heading) heading.textContent = tab === 'notes' ? 'Notes' : 'Projects';
           document.title = tabs.find((a) => a.dataset.tab === tab).dataset.title;
-          filter(tag);
+          if (tab === 'notes') filter(tag, !tabbing);
           try {
             localStorage.setItem('inspect:tab', tab === 'notes' ? '/notes/' : '/');
           } catch {}
@@ -123,7 +148,7 @@ const headings = { projects: 'Projects', notes: 'Notes' };
           e.preventDefault();
           go(a.href);
         });
-        box.addEventListener('click', (e) => {
+        chipBar?.addEventListener('click', (e) => {
           const a = e.target.closest('a[data-filter]');
           if (!a || !plain(e)) return;
           e.preventDefault();

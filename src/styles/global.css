@@ -195,7 +195,6 @@ canvas {
   from {
     opacity: 0;
     transform: translateY(8px);
-    filter: blur(4px);
   }
 }
 
@@ -854,23 +853,19 @@ input[type="checkbox"] {
 }
 
 ::view-transition-old(root) {
-  animation: vt-out 180ms ease-in both;
+  animation: vt-out 280ms var(--out) both;
 }
 
 ::view-transition-new(root) {
-  animation: vt-in 300ms var(--out) both;
+  animation: vt-in 280ms var(--out) both;
 }
 
 html:active-view-transition-type(forward)::view-transition-new(root) {
-  animation: vt-rise 380ms var(--out) both;
+  animation-name: vt-rise;
 }
 
 html:active-view-transition-type(back)::view-transition-old(root) {
-  animation: vt-sink 240ms cubic-bezier(0.4, 0, 1, 1) both;
-}
-
-html:active-view-transition-type(back)::view-transition-new(root) {
-  animation: vt-in 320ms var(--out) both;
+  animation-name: vt-sink;
 }
 
 ::view-transition {
@@ -1044,12 +1039,33 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   }
 }
 
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  margin: 56px 0 20px;
+}
+
+.bar .filters {
+  margin: 0;
+  transition: opacity 220ms var(--out) 130ms;
+}
+
+.bar .filters[inert] {
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 120ms ease-in,
+    visibility 0s linear 120ms;
+}
+
 .sections {
   display: inline-grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   gap: 2px;
-  margin: 56px 0 20px;
   padding: 3px;
   border-radius: 11px;
   background: var(--stage);
@@ -1167,4 +1183,12 @@ html:active-view-transition-type(back)::view-transition-new(root) {
   .pill {
     transition: none;
   }
+}
+
+.fade {
+  transition: opacity 240ms var(--out);
+}
+
+.fade.wait {
+  opacity: 0;
 }
