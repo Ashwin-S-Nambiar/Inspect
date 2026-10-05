@@ -1,0 +1,59 @@
+---
+title: From Trakt to Simkl
+dek: "The last watched widget on my portfolio started on Trakt, with a database just to keep its tokens. Then the Trakt app was deleted, and moving to Simkl took the database away with it. What's left is mostly working out which thing I watched last."
+date: 2026-10-03T21:40:00+05:30
+kind: note
+tags: [labs, simkl, api]
+project:
+  name: Simkl Last Watched, a portfolio lab
+  icon: ../../../assets/projects/portfolio.png
+  about: "A lab on my portfolio: the last film, show or anime I watched, from Simkl."
+  live: https://ashwin.co.in/labs/simkl-widget
+  repo: https://github.com/Ashwin-S-Nambiar/simkl-api
+  stack: [Express, Simkl API, TMDB API]
+thumb: ./thumb.png
+related:
+  - title: "Simkl API"
+    href: https://simkl.docs.apiary.io
+    note: "The sync endpoints this reads"
+---
+
+My portfolio has a small card that says what I watched last: the poster, the title, the episode if it was a show, and a link to it. It's a tiny Express service that holds the tokens and a widget that asks it every five minutes.
+
+## The token that kept moving
+
+It started on Trakt in October 2025. Trakt hands out a refresh token that can change every time you use it, so the service had to save each new one or lose access on the next restart. That meant a Postgres database on Neon whose only job was to remember one token.
+
+On 2 August 2026 the Trakt OAuth app was deleted upstream, and making a new one needs Trakt VIP. So the same day the service moved to Simkl. Simkl's access tokens don't rotate, so the database went too, along with the provider switch and the old `/api/trakt/last` route.
+
+## Which thing was last
+
+Simkl keeps films, shows and anime in separate lists, and none of them can be sorted by when you watched. So the service asks for all three at once, only for things touched in the last 45 days to keep them small, and sorts them itself:
+
+```js
+const buckets = await Promise.all([
+  fetchBucket('shows', dateFrom),
+  fetchBucket('anime', dateFrom),
+  fetchBucket('movies', dateFrom)
+]);
+
+const entries = buckets.flatMap(collectEntries);
+entries.sort((a, b) => new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime());
+```
+
+Anything without a `last_watched_at` is only on a watchlist and gets skipped. If nothing at all was watched in 45 days, it asks again for the whole history, so the card still shows something after a quiet month instead of going blank.
+
+## Two kinds of episode
+
+Shows come back with a marker like `S01E05`. Anime tracked through Simkl itself uses absolute numbering, `E366`, with no season at all. Both are normal, so the parser takes either, and the card says "Supernatural S8 E12" or just the show and "E366".
+
+Links had a catch too. Simkl routes pages by number, not by name: `/tv/my-show` doesn't find the show, `/tv/1648284/my-show` does. And anime lives under `/anime/`, which the service knows from which list the entry came out of.
+
+## Posters from somewhere else
+
+Posters come from TMDB first, through the TMDB id Simkl stores, with Simkl's own image as the fallback. I tried Simkl's art on its own once, since it would save a request. The Rick and Morty poster looked visibly off, so TMDB went back in front. The widget loads TMDB's 92 px version as a blurred placeholder while the full one comes in.
+
+## Rough edges
+
+- **It sleeps.** The service runs on Render's free tier, which stops it when nobody has asked for a while, so the first visit after a quiet spell waits for it to wake.
+- **A revoked token needs me.** If Simkl rejects the token, the service answers `503` with `REAUTH_REQUIRED` rather than a plain error, and the card says no recent activity until I run the token script again.

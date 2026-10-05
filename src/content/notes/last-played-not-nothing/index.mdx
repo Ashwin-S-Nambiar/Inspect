@@ -1,0 +1,56 @@
+---
+title: Last played, not nothing
+dek: "The Spotify widget on my portfolio shows what I'm listening to. Most of its code is about the times I'm not: keeping the secrets off the page, asking Spotify as little as it can, and having something to show when nothing is playing."
+date: 2026-09-13T19:20:00+05:30
+kind: note
+tags: [labs, spotify, api]
+project:
+  name: Spotify Now Playing, a portfolio lab
+  icon: ../../../assets/projects/portfolio.png
+  about: "A lab on my portfolio: what I'm listening to on Spotify, refreshed every 30 seconds."
+  live: https://ashwin.co.in/labs/spotify-now-playing
+  stack: [Next.js, SWR, Spotify Web API]
+thumb: ./thumb.png
+related:
+  - title: "Get Currently Playing Track"
+    href: https://developer.spotify.com/documentation/web-api/reference/get-the-users-currently-playing-track
+    note: "The endpoint that answers 204 when nothing is on"
+  - title: "Get Recently Played Tracks"
+    href: https://developer.spotify.com/documentation/web-api/reference/get-recently-played
+    note: "Where the last played track comes from"
+---
+
+The widget sits on my portfolio and says what I'm listening to: the album art, the track and the artist, with the art linking to the song. It's a Next.js route that talks to Spotify and a small component that asks the route every 30 seconds.
+
+## The secrets stay on the server
+
+Spotify only tells you what someone is playing with their permission, which means OAuth, which means a client secret and a refresh token that can't go anywhere near the browser. So the browser never talks to Spotify. It asks my route, and the route does the rest: trades the refresh token for a short-lived access token, asks Spotify, and hands back only what the widget draws.
+
+```ts
+const { access_token } = await getAccessToken(refreshToken);
+
+const resp = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+  headers: { Authorization: `Bearer ${access_token}` },
+});
+```
+
+The refresh token came from a callback route that prints it after I sign in once. If Spotify ever refuses it with `invalid_grant`, the log says to run that flow again rather than just "failed".
+
+## Thirty seconds, three times
+
+Every 30 seconds shows up three times. The route keeps its last answer in memory for 30 seconds. It also sends `s-maxage=30, stale-while-revalidate=60`, so the CDN in front of it can answer most requests without the route running at all. And the component polls every 30 seconds, only while the tab is visible, because polling faster would only read the same cached answer again. However many people have the page open, the route asks Spotify for a fresh answer at most once every 30 seconds: a token and the track, and the last played track when nothing is on.
+
+## When nothing is playing
+
+The first version had two states: playing, or "not listening to anything right now." In practice it was mostly the second one. Spotify answers `204` when nothing is playing, and an empty item during a private session or an ad.
+
+Now both of those ask for the most recently played track instead, `recently-played?limit=1`, and the heading changes from "now listening." to "last played." The idle line only shows if that comes back empty too. And if Spotify errors, the route answers with the last thing it cached rather than nothing.
+
+## Art that doesn't jump
+
+Spotify sends album art in a few sizes, largest first. The widget shows the largest at 100 px and uses the smallest, the last in the list, as a blurred placeholder while the big one loads. The box is reserved before any of it arrives, so the loading skeleton, the idle line and the real track all take the same space and nothing around the widget moves.
+
+## Rough edges
+
+- **The memory cache is per server.** On a host that runs several copies of the route, each has its own 30 seconds. The CDN header is what really keeps the calls down.
+- **Last played can be old.** If I haven't played anything for a week, it shows a week-old track under "last played." without saying when.
