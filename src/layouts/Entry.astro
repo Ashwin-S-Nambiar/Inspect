@@ -216,7 +216,9 @@ const links = project && [
         const found = origin();
         if (!found) return;
         e.preventDefault();
-        nav.traverseTo(found.entry.key).finished?.catch((err) => {
+        const traversal = nav.traverseTo(found.entry.key);
+        traversal.committed?.catch(() => {});
+        traversal.finished?.catch((err) => {
           if (err?.name !== 'AbortError') location.href = found.path;
         });
       });

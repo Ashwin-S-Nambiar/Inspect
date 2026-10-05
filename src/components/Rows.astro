@@ -6,9 +6,10 @@ import { site } from '../site';
 interface Props {
   posts: Post[];
   start?: number;
+  eagerCount?: number;
 }
 
-const { posts, start = 5 } = Astro.props;
+const { posts, start = 5, eagerCount = 0 } = Astro.props;
 ---
 
 <ol class:list={['list', { thumbs: site.thumbs }]}>
@@ -16,11 +17,11 @@ const { posts, start = 5 } = Astro.props;
     const thumb = p.data.thumb ?? p.data.hero?.image;
     return (
       <li class="row" data-in data-tags={p.data.tags.join(' ')} style={`--i:${Math.min(i, 8) + start}`}>
-        <a class="row-link" href={href(p)} style={`view-transition-name: row-${vt(p)}; view-transition-class: row`}>
+        <a class="row-link" href={href(p)} aria-label={p.data.title} style={`view-transition-name: row-${vt(p)}; view-transition-class: row`}>
           {site.thumbs && (
             <span class="row-th" aria-hidden="true">
               {thumb ? (
-                <Image src={thumb} alt="" width={224} height={140} fit="cover" loading="eager" decoding="async" />
+                <Image src={thumb} alt="" width={224} height={140} fit="cover" loading={i < eagerCount ? 'eager' : 'lazy'} decoding="async" />
               ) : (
                 <span class="glyph">{p.data.glyph ?? p.data.title.slice(0, 1)}</span>
               )}
