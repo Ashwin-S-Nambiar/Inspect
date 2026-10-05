@@ -1,0 +1,264 @@
+---
+import type { ImageMetadata } from 'astro';
+import { Picture } from 'astro:assets';
+
+export type DeviceKind = 'phone' | 'tablet' | 'desktop';
+
+interface Props {
+  kind: DeviceKind;
+  src: ImageMetadata;
+  alt: string;
+  ground?: string;
+  time?: string;
+  date?: string;
+}
+
+const { kind, src, alt, ground = '#111', time = '9:41', date = 'Mon Oct 5' } = Astro.props;
+
+const SPECS = {
+  phone: { w: 390, h: 844, rim: 6, bezel: 8, radius: 62 },
+  tablet: { w: 1000, h: 710, rim: 7, bezel: 22, radius: 42 },
+  desktop: { w: 1280, h: 800, rim: 0, bezel: 0, radius: 10 },
+} as const;
+const spec = SPECS[kind];
+const k = (n: number) => `calc(${n} * var(--k))`;
+const shell = spec.radius;
+const bezelR = Math.max(0, spec.radius - spec.rim);
+const screenR = Math.max(0, spec.radius - spec.rim - spec.bezel);
+const ISLAND = { top: 13, w: 83, h: 31 };
+const LENS = 13;
+const sideButtons = [
+  { at: 116, len: 28, side: 'a' },
+  { at: 168, len: 50, side: 'a' },
+  { at: 232, len: 50, side: 'a' },
+  { at: 180, len: 74, side: 'b' },
+] as const;
+const buttonStyle = (b: (typeof sideButtons)[number]) => ({
+  top: k(b.at),
+  height: k(b.len),
+  width: k(5),
+  [b.side === 'a' ? 'left' : 'right']: k(-3),
+  borderRadius: b.side === 'a' ? `${k(3)} 0 0 ${k(3)}` : `0 ${k(3)} ${k(3)} 0`,
+});
+const handheld = kind !== 'desktop';
+const SAFE = { phone: [0, 0, 34, 0], tablet: [0, 0, 20, 0], desktop: [0, 0, 0, 0] } as const;
+const safe = { padding: SAFE[kind].map((n) => (n ? k(n) : '0')).join(' ') };
+const sizes = kind === 'phone' ? '220px' : '(max-width: 660px) 100vw, 620px';
+---
+
+<div class="frame" data-kind={kind} style={{ '--nw': spec.w, '--nh': spec.h, '--ground': ground }}>
+  {handheld ? (
+    <div class="body">
+      {kind === 'phone' && sideButtons.map((b) => <span class="btn" style={buttonStyle(b)}></span>)}
+      <div class="shell" style={{ borderRadius: k(shell), padding: k(spec.rim) }}>
+        <div class="bezel" style={{ borderRadius: k(bezelR), padding: k(spec.bezel) }}>
+          {kind === 'tablet' && <span class="lens" style={{ top: k(spec.bezel / 2 - 5), left: `calc(50% - ${k(5)})`, width: k(10), height: k(10) }}></span>}
+          <div class:list={['screen', kind]} style={{ borderRadius: k(screenR) }}>
+            {kind === 'phone' && (
+              <>
+                <span class="island" style={{ top: k(ISLAND.top), left: '50%', width: k(ISLAND.w), height: k(ISLAND.h), translate: '-50% 0' }}></span>
+                <span class="lens" style={{ top: k(ISLAND.top + ISLAND.h / 2 - LENS / 2), left: `calc(50% + ${k(ISLAND.w / 2 - ISLAND.h / 2 - LENS / 2)})`, width: k(LENS), height: k(LENS) }}></span>
+              </>
+            )}
+            {(kind === 'phone' || kind === 'tablet') && (
+              <div class:list={['status', { ears: kind === 'phone' }]} style={kind === 'phone' ? { height: k(59), fontSize: k(17), '--iw': k(ISLAND.w) } : { height: k(26), padding: `0 ${k(20)}`, fontSize: k(13) }}>
+                <span class="clock" style={{ gap: k(8) }}>
+                  {time}
+                  {kind === 'tablet' && <span>{date}</span>}
+                </span>
+                <span class="icons" style={{ gap: k(kind === 'phone' ? 6 : 5) }}>
+                  {kind === 'phone' && (
+                    <svg style={{ width: k(18), height: k(12) }} viewBox="0 0 18 12" fill="currentColor">
+                      {[4.6, 7, 9.5, 12].map((h, i) => <rect x={i * 4.9} y={12 - h} width="3.2" height={h} rx="1" />)}
+                    </svg>
+                  )}
+                  <svg style={{ width: k(17), height: k(12) }} viewBox="0 0 17 12" fill="currentColor">
+                    <path d="M8.5 2.3c2.5 0 4.8 1 6.5 2.6.2.2.5.2.7 0l1-1c.2-.2.2-.5 0-.7A11.7 11.7 0 0 0 8.5 0 11.7 11.7 0 0 0 .3 3.2c-.2.2-.2.5 0 .7l1 1c.2.2.5.2.7 0a9.4 9.4 0 0 1 6.5-2.6Z" />
+                    <path d="M8.5 5.9c1.5 0 2.8.5 3.9 1.5.2.2.5.2.7 0l1-1c.2-.2.2-.5 0-.7a8 8 0 0 0-11.2 0c-.2.2-.2.5 0 .7l1 1c.2.2.5.2.7 0 1.1-1 2.4-1.5 3.9-1.5Z" />
+                    <path d="M11 8.9c.2-.2.2-.5 0-.7a3.6 3.6 0 0 0-5 0c-.2.2-.2.5 0 .7l2.1 2.2c.2.2.6.2.8 0L11 8.9Z" />
+                  </svg>
+                  <svg style={{ width: k(27), height: k(13) }} viewBox="0 0 27 13">
+                    <rect x="0.5" y="0.5" width="23" height="12" rx="3.8" fill="none" stroke="currentColor" stroke-opacity="0.35" />
+                    <rect x="2" y="2" width="20" height="9" rx="2.3" fill="currentColor" />
+                    <path d="M25 4.4v4.2a2.2 2.2 0 0 0 0-4.2Z" fill="currentColor" fill-opacity="0.4" />
+                  </svg>
+                </span>
+              </div>
+            )}
+            <div class="content" style={safe}>
+              <Picture src={src} alt={alt} formats={['avif', 'webp']} fallbackFormat="webp" widths={kind === 'phone' ? [240, 480, 720] : [640, 960, 1440]} sizes={sizes} loading="lazy" decoding="async" />
+            </div>
+            <span
+              class="home"
+              style={kind === 'tablet' ? { bottom: k(9), width: k(236), height: k(6) } : { bottom: k(8), width: k(134), height: k(5) }}
+            ></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : (
+    <div class="plain" style={{ borderRadius: k(10) }}>
+      <Picture src={src} alt={alt} formats={['avif', 'webp']} fallbackFormat="webp" widths={[640, 960, 1440]} sizes={sizes} loading="lazy" decoding="async" />
+    </div>
+  )}
+</div>
+
+<style>
+  .frame {
+    --air: 28px;
+    --fw: min(100cqw - var(--air) * 2, (100cqh - var(--air) * 2) * var(--nw) / var(--nh));
+    --k: calc(var(--fw) / var(--nw));
+    width: var(--fw);
+    aspect-ratio: var(--nw) / var(--nh);
+  }
+
+  .frame[data-kind="phone"] {
+    --air: 20px;
+  }
+
+  .body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .shell {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(145deg, #eef3fb 0%, #9ba7bb 16%, #d5deec 34%, #7f8a9d 55%, #c7d1e2 74%, #8e99ad 90%, #e6ecf6 100%);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.55),
+      0 0 0 0.5px rgb(0 0 0 / 0.22),
+      0 calc(10 * var(--k)) calc(18 * var(--k)) rgb(27 27 25 / 0.18);
+  }
+
+  .bezel {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, #161618, #0a0a0b);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.05),
+      0 0 0 1px rgb(0 0 0 / 0.55);
+  }
+
+  .btn {
+    position: absolute;
+    background: linear-gradient(90deg, #7f8a9d, #d8e0ee, #939eb1);
+    box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.18);
+  }
+
+  .screen {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--ground);
+    color: #f5f5f7;
+  }
+
+  .screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    border-radius: inherit;
+    background: linear-gradient(to bottom right, rgb(255 255 255 / 0.06), transparent 50%);
+    pointer-events: none;
+  }
+
+  .island {
+    position: absolute;
+    z-index: 2;
+    border-radius: 999px;
+    background: #000;
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.28),
+      0 0 0 0.5px rgb(255 255 255 / 0.16);
+  }
+
+  .lens {
+    position: absolute;
+    z-index: 4;
+    border-radius: 50%;
+    background: radial-gradient(circle at 38% 36%, #4a5d8f 0%, #1a2240 38%, #070914 72%);
+    box-shadow:
+      inset 0 0 0 1px rgb(120 140 190 / 0.18),
+      0 0 0 1px rgb(0 0 0 / 0.6);
+  }
+
+  .status {
+    position: relative;
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--sans);
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .status.ears {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--iw) minmax(0, 1fr);
+    justify-items: center;
+  }
+
+  .status.ears .icons {
+    grid-column: 3;
+  }
+
+  .clock,
+  .icons {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .content {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+  }
+
+  .content :global(picture),
+  .content :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .content :global(img) {
+    object-fit: cover;
+    object-position: top;
+  }
+
+  .home {
+    position: absolute;
+    left: 50%;
+    z-index: 3;
+    border-radius: 999px;
+    translate: -50% 0;
+    background: currentColor;
+  }
+
+  .plain {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    box-shadow:
+      0 0 0 1px var(--thumb-edge),
+      0 calc(14 * var(--k)) calc(36 * var(--k)) calc(-10 * var(--k)) rgb(20 20 19 / 0.3);
+  }
+
+  .plain :global(picture),
+  .plain :global(img) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+</style>
