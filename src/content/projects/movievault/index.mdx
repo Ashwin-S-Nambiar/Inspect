@@ -18,7 +18,27 @@ hero:
   alt: "MovieVault's home on a desktop: a 3D ring of DVD cases with Lanterns in the middle, its title under it, and the search bar at the bottom"
 ---
 
+import Clip from '../../../components/Clip.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
+import phone from './phone.webp';
+import statusPoster from './status.jpg';
+import status from './status.mp4';
+import tablet from './tablet.webp';
+
 The first <Project /> was a watchlist with a search box, from 2024. The rebuild starts from the question it never answered, where can I watch this tonight, and grew from there into series, anime, people and whole franchises. It also dropped every animation and data fetching library on the way. The dependencies are React, React Router, Tailwind and an icon set.
+
+On a phone it's laid out for a thumb. The ring shows one case at a time and the search lives in a dock at the bottom of the screen, while an iPad and a desktop get the full ring.
+
+<DeviceSwitch
+  ground="#FAFAF9"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'MovieVault on an iPhone: one DVD case in the middle of the ring with its title, and the search dock at the bottom' },
+    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'MovieVault on an iPad in landscape: the ring of DVD cases, the title, View details and Save, and the search bar' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'MovieVault on a desktop: the full ring of cases, Lanterns in the middle' },
+  ]}
+  caption="The home page three ways."
+/>
 
 ## A ring on a spring
 
@@ -69,6 +89,20 @@ Anime that restart their numbering each season also get a running number, worked
 MovieVault doesn't ping TMDB to check on it. It watches the requests the app is already making. A failed request is retried after 400 ms, then 1 s, plus a little jitter, three attempts in all. Once TMDB is known to be down, a request tries once and stops, so a broken API doesn't get hammered.
 
 A failure within 10 seconds of a success doesn't count as down. A 401 means the key is wrong, which is a different message from TMDB being unreachable. A small status pill appears only in those cases, or when the browser says it's offline. When requests start working again, every query that failed is fetched again on its own.
+
+<Clip
+  src={status}
+  poster={statusPoster}
+  length={9.4}
+  label="MovieVault's search page with TMDB blocked on purpose: dune is typed, a pill says Reconnecting to TMDB, then TMDB isn't responding with a Retry button, the cursor presses Retry, the pill says Back online and the results appear"
+  caption="TMDB blocked on purpose, then let back in."
+  cues={[
+    { from: 0.4, to: 1.1, text: 'Search with TMDB blocked', x: 32, y: 91.5, w: 31.5, h: 7 },
+    { from: 1.1, to: 2.4, text: "Requests fail and retry, so it says it's reconnecting", x: 39.5, y: 8.5, w: 21, h: 7 },
+    { from: 2.4, to: 5.9, text: 'Three tries failed: TMDB is down, and Retry sits beside it', x: 39.5, y: 8.5, w: 21, h: 7 },
+    { from: 6.0, to: 9.2, text: 'It answers again: Back online, and the search runs again', x: 39.5, y: 8.5, w: 21, h: 7 },
+  ]}
+/>
 
 ## Pages that come back painted
 

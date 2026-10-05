@@ -19,9 +19,25 @@ hero:
 ---
 
 import Annotated from '../../../components/Annotated.astro';
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
 import offline from './offline.webp';
+import phone from './phone.webp';
+import tablet from './tablet.webp';
 
 <Project /> takes one colour and a harmony and hands back five colours that work together, laid out like paint chips. I first built it in 2024 as Color Scheme Generator: a colour input, a dropdown of harmonies, a Get Color Scheme button and five swatches. The rebuild stayed plain HTML, CSS and JavaScript, with ten modules the browser loads directly.
+
+It's one page at every size, and on a phone it's its own layout. The chips turn on their side and stack, so each colour sits beside its name and value, with the base, the harmonies and the copy formats underneath.
+
+<DeviceSwitch
+  ground="#F0F0EF"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'Fandeck on an iPhone: five chips stacked as rows, each colour beside its name, contrast samples and value, with the base colour and the harmonies below' },
+    { label: 'iPad', kind: 'tablet', src: tablet, alt: 'Fandeck on an iPad in landscape: five tall chips side by side above the base, copy formats and harmonies' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'Fandeck on a desktop: five tall paint chips, the base colour, copy formats and the eight harmonies' },
+  ]}
+  caption="The same palette three ways."
+/>
 
 ## No button
 
