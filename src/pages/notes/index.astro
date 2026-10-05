@@ -1,0 +1,22 @@
+---
+import PostList from '../../components/PostList.astro';
+import Base from '../../layouts/Base.astro';
+import { inSection } from '../../lib/posts';
+import { site } from '../../site';
+
+const posts = await inSection('notes');
+---
+
+<Base
+  title={`Notes · ${site.name}`}
+  description="Shorter notes on one part of a project: a component, an animation, a fix."
+>
+  <section class="intro">
+    <h1 data-in style="--i:1">{site.tagline}</h1>
+    <p data-in style="--i:2">
+      Shorter notes on one part of a project: a component, an animation, a fix, and the
+      <em>small details</em> behind it.
+    </p>
+  </section>
+  <PostList posts={posts} section="notes" />
+</Base>

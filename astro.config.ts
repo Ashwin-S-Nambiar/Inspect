@@ -24,7 +24,9 @@ export default defineConfig({
     sitemap({
       filter: (page) => {
         const { pathname } = new URL(page);
-        return pathname === '/' || pathname.startsWith('/posts/');
+        return (
+          pathname === '/' || pathname.startsWith('/projects/') || pathname.startsWith('/notes/')
+        );
       },
     }),
     {

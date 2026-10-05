@@ -3,14 +3,14 @@ import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 
 const posts = defineCollection({
-  loader: glob({ pattern: '**/index.{md,mdx}', base: './src/content/posts', generateId }),
+  loader: glob({ pattern: '{notes,projects}/*/index.{md,mdx}', base: './src/content', generateId }),
   schema: ({ image }) =>
     z.object({
       title: z.string(),
       dek: z.string(),
       date: z.coerce.date(),
       updated: z.coerce.date().optional(),
-      kind: z.enum(['build log', 'deep dive', 'note']).default('build log'),
+      kind: z.enum(['project', 'build log', 'deep dive', 'note']).default('build log'),
       tags: z.array(z.string()).default([]),
       draft: z.boolean().default(false),
       hero: z
@@ -35,7 +35,7 @@ const posts = defineCollection({
           about: z.string().optional(),
           live: z.url().optional(),
           repo: z.url().optional(),
-          notes: z.url().optional(),
+          made: z.string().optional(),
           stack: z.array(z.string()).default([]),
         })
         .optional(),

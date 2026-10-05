@@ -16,7 +16,9 @@ cards = {}
 with sync_playwright() as playwright:
     browser = playwright.chromium.launch(channel="chrome", headless=True)
     page = browser.new_page(viewport={"width": 1200, "height": 630}, device_scale_factor=1)
-    for post in sorted((root / "src/content/posts").glob("*/index.mdx")):
+    for post in sorted([*(root / "src/content").glob("notes/*/index.mdx"), *(root / "src/content").glob("projects/*/index.mdx")]):
+        section = post.parent.parent.name
+        key = f"{section}/{post.parent.name}"
         data = yaml.safe_load(post.read_text().split("---", 2)[1])
         if data.get("draft"):
             continue
@@ -28,11 +30,13 @@ with sync_playwright() as playwright:
         if len(description) > 120:
             description = description[:117].rsplit(" ", 1)[0].rstrip(".,;") + "…"
         label = data.get("kind", "build log")
-        if data.get("project", {}).get("name"):
+        if label == "project":
+            label = "write-up"
+        elif data.get("project", {}).get("name"):
             label += " · " + data["project"]["name"]
         html = template
-        for key, value in {"title": data["title"], "description": description, "label": label, "image": image.as_uri()}.items():
-            html = html.replace("{{" + key + "}}", escape(value, quote=True))
+        for field, value in {"title": data["title"], "description": description, "label": label, "image": image.as_uri()}.items():
+            html = html.replace("{{" + field + "}}", escape(value, quote=True))
         with NamedTemporaryFile(mode="w", suffix=".html", dir=root / "docs") as source:
             source.write(html)
             source.flush()
@@ -42,12 +46,12 @@ with sync_playwright() as playwright:
             for selector in [".copy", ".visual"]:
                 bounds = page.locator(selector).bounding_box()
                 if bounds["y"] < 32 or bounds["y"] + bounds["height"] > 598:
-                    raise RuntimeError(f"Article card needs more space: {post.parent.name}")
-            output = root / "public/og/posts" / (post.parent.name + ".jpg")
+                    raise RuntimeError(f"Article card needs more space: {key}")
+            output = root / "public/og" / section / (post.parent.name + ".jpg")
             output.parent.mkdir(parents=True, exist_ok=True)
             page.screenshot(path=str(output), type="jpeg", quality=92)
-            cards[post.parent.name] = f"/og/posts/{post.parent.name}.jpg?v={version}"
-            print(f"Rendered {post.parent.name}")
+            cards[key] = f"/og/{key}.jpg?v={version}"
+            print(f"Rendered {key}")
     browser.close()
 
 (root / "src/lib/og-cards.json").write_text(json.dumps(cards, indent=2) + "\n")

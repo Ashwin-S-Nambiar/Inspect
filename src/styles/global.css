@@ -1043,3 +1043,93 @@ html:active-view-transition-type(back)::view-transition-new(root) {
     text-decoration-color: var(--muted);
   }
 }
+
+.sections {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  margin: 56px 0 20px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--stage);
+}
+
+.sections a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 112px;
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 480;
+  line-height: 1;
+  color: var(--muted);
+  text-decoration: none;
+  -webkit-touch-callout: none;
+  user-select: none;
+  touch-action: manipulation;
+  transition:
+    color 150ms ease,
+    transform 120ms var(--out);
+}
+
+.sections a::after {
+  content: "";
+  position: absolute;
+  inset: -6px -1px;
+}
+
+.sections a:active {
+  transform: scale(0.97);
+}
+
+.sections a[aria-current="page"] {
+  color: var(--strong);
+}
+
+.pill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--card);
+  box-shadow:
+    0 0 0 1px var(--card-line),
+    0 1px 2px rgb(20 20 19 / 0.06);
+  view-transition-name: sections-pill;
+}
+
+.sec-l,
+.sec-n {
+  position: relative;
+}
+
+.sec-n {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+
+::view-transition-group(sections-pill) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sections a:not([aria-current="page"]):hover {
+    color: var(--strong);
+  }
+}
+
+.more {
+  margin-top: 56px;
+}
+
+.more .sect {
+  margin: 0 0 12px;
+}

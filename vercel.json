@@ -37,12 +37,22 @@
   "redirects": [
     {
       "source": "/posts/reprinting-blogspace",
-      "destination": "/posts/building-inspect/",
+      "destination": "/notes/building-inspect/",
       "permanent": true
     },
     {
       "source": "/posts/reprinting-blogspace/",
-      "destination": "/posts/building-inspect/",
+      "destination": "/notes/building-inspect/",
+      "permanent": true
+    },
+    {
+      "source": "/posts/:slug",
+      "destination": "/notes/:slug/",
+      "permanent": true
+    },
+    {
+      "source": "/posts/:slug/",
+      "destination": "/notes/:slug/",
       "permanent": true
     },
     {
