@@ -70,6 +70,13 @@ const home = Astro.url.pathname === '/';
         const d = document.documentElement;
         d.classList.add('js');
         const show = () => d.classList.add('ready');
+        try {
+          if (sessionStorage.getItem('inspect:in')) d.classList.add('instant');
+          else sessionStorage.setItem('inspect:in', '1');
+        } catch {}
+        const TABS = ['/', '/notes/'];
+        const tabOf = (url) => (url ? TABS.indexOf(new URL(url).pathname) : -1);
+        const tabSwitch = (other) => tabOf(location.href) >= 0 && tabOf(other) >= 0 && tabOf(other) !== tabOf(location.href);
         const managed = 'onpagereveal' in window && 'navigation' in window;
         if (managed) history.scrollRestoration = 'manual';
         const save = () => {
@@ -94,6 +101,7 @@ const home = Astro.url.pathname === '/';
         addEventListener('pageswap', (e) => {
           save();
           if (!e.viewTransition) return;
+          d.classList.toggle('vt-tab', tabSwitch(e.activation?.entry?.url));
           unname(e.activation?.entry?.url);
           for (const t of heroes()) if (!seen(t)) t.classList.add('vt-solo');
         });
@@ -102,16 +110,33 @@ const home = Astro.url.pathname === '/';
           if (e.viewTransition) d.classList.add('ready', 'instant');
           if (!managed) return;
           const act = navigation.activation;
-          if (e.viewTransition) unname(act?.from?.url);
+          const tab = e.viewTransition && tabSwitch(act?.from?.url);
+          d.classList.toggle('vt-tab', Boolean(tab));
+          if (e.viewTransition && !tab) unname(act?.from?.url);
           const type = act?.navigationType;
           if (e.viewTransition && e.viewTransition.types) {
             const back = type === 'traverse' && act.entry && act.from && act.entry.index < act.from.index;
-            e.viewTransition.types.add(back ? 'back' : 'forward');
+            e.viewTransition.types.add(tab ? 'tab' : back ? 'back' : 'forward');
+          }
+          if (tab) {
+            const links = document.querySelectorAll('.sections a');
+            const pill = document.querySelector('.sections .pill');
+            const from = links[tabOf(act.from.url)];
+            const to = links[tabOf(location.href)];
+            if (pill && from && to && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              const dx = from.getBoundingClientRect().left - to.getBoundingClientRect().left;
+              const x = new DOMMatrix(getComputedStyle(pill).transform).m41;
+              pill.animate([{ transform: `translateX(${x + dx}px)` }, { transform: `translateX(${x}px)` }], {
+                duration: 320,
+                easing: 'cubic-bezier(0.23, 1, 0.32, 1)',
+              });
+            }
+            e.viewTransition.finished.then(() => d.classList.remove('vt-tab'), () => d.classList.remove('vt-tab'));
           }
           const y = history.state?.y;
           if ((type === 'traverse' || type === 'reload') && typeof y === 'number') scrollTo(0, y);
           else if (!location.hash) scrollTo(0, 0);
-          if (!e.viewTransition) return;
+          if (!e.viewTransition || tab) return;
           const row = document.querySelector('.row-t.vt-keep');
           if (row && !seen(row)) {
             const r = row.getBoundingClientRect();
@@ -136,7 +161,10 @@ const home = Astro.url.pathname === '/';
         const css = getComputedStyle(d);
         const first = (v) => css.getPropertyValue(v).split(',')[0].trim();
         const fonts = document.fonts
-          ? Promise.all(['--font-sans', '--font-mono'].map((v) => document.fonts.load(`1em ${first(v)}`))).then(() => document.fonts.ready)
+          ? Promise.all([
+              ...['--font-sans', '--font-mono'].map((v) => document.fonts.load(`1em ${first(v)}`)),
+              document.fonts.load(`italic 1em ${first('--font-serif')}`),
+            ]).then(() => document.fonts.ready)
           : Promise.resolve();
         Promise.race([fonts, new Promise((r) => setTimeout(r, 600))]).then(show, show);
       })();
@@ -167,6 +195,14 @@ const home = Astro.url.pathname === '/';
     <script>
       import { initTips } from '../lib/tip';
       initTips();
+
+      const tab = ['/', '/notes/'].includes(location.pathname) ? location.pathname : null;
+      try {
+        if (tab) localStorage.setItem('inspect:tab', tab);
+        const last = localStorage.getItem('inspect:tab');
+        const brand = document.querySelector<HTMLAnchorElement>('.brand');
+        if (!tab && brand && last === '/notes/') brand.href = last;
+      } catch {}
     </script>
   </body>
 </html>
