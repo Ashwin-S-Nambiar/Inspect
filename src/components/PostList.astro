@@ -33,11 +33,11 @@ const headings = { projects: 'Projects', notes: 'Notes' };
         {!tagFilters.includes(tag) && <a class="chip" href={`/tags/${tag}/`} aria-current="page">{tagLabel(tag)}</a>}
       </nav>
     )}
-    <Rows posts={posts} />
+    <Rows posts={posts} eagerCount={2} />
   </>
 ) : (
   <>
-    <div class="bar" data-in style="--i:3">
+    <div class="switch-row" data-in style="--i:3">
       <nav class="sections" aria-label="Sections" data-sections style={`--at:${section === 'notes' ? 1 : 0}`}>
         <span class="pill" aria-hidden="true"></span>
         {(['projects', 'notes'] as const).map((s) => (
@@ -65,7 +65,7 @@ const headings = { projects: 'Projects', notes: 'Notes' };
     <div class="panels" data-panels>
       {(['projects', 'notes'] as const).map((s) => (
         <div class="panel" data-panel={s} inert={s !== section}>
-          <Rows posts={lists[s]} />
+          <Rows posts={lists[s]} eagerCount={s === section ? 2 : 0} />
         </div>
       ))}
     </div>
@@ -214,7 +214,7 @@ const headings = { projects: 'Projects', notes: 'Notes' };
           if (heading) heading.textContent = tab === 'notes' ? 'Notes' : 'Projects';
           document.title = tabs.find((a) => a.dataset.tab === tab).dataset.title;
           if (tab !== current()) switchTo(tab, tag);
-          else if (tab === 'notes') filter(tag);
+          else if (tab === 'notes' && tag !== chipBar?.querySelector('[aria-current="page"]')?.dataset.filter) filter(tag);
           try {
             localStorage.setItem('inspect:tab', tab === 'notes' ? '/notes/' : '/');
           } catch {}

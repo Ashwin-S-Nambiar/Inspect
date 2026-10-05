@@ -893,16 +893,24 @@ input[type="checkbox"] {
   animation: vt-in 280ms var(--out) both;
 }
 
-html:active-view-transition-type(forward)::view-transition-new(root) {
-  animation-name: vt-rise;
-}
-
-html:active-view-transition-type(back)::view-transition-old(root) {
-  animation-name: vt-sink;
+::view-transition-old(root),
+::view-transition-new(root) {
+  mix-blend-mode: plus-lighter;
 }
 
 ::view-transition {
   background: var(--bg);
+}
+
+.return-title {
+  position: fixed;
+  z-index: 100;
+  pointer-events: none;
+  transform-origin: top left;
+}
+
+.returning-title {
+  visibility: hidden;
 }
 
 @keyframes vt-in {
@@ -917,27 +925,14 @@ html:active-view-transition-type(back)::view-transition-old(root) {
   }
 }
 
-@keyframes vt-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-}
-
-@keyframes vt-sink {
-  to {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-}
-
 ::view-transition-group(*) {
   animation-duration: 380ms;
   animation-timing-function: var(--drawer);
 }
 
 ::view-transition-group(.hero-title) {
-  animation-timing-function: cubic-bezier(0.5, 0, 0.1, 1);
+  animation-duration: 280ms;
+  animation-timing-function: var(--drawer);
 }
 
 ::view-transition-old(.hero-title),
@@ -986,7 +981,7 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 
 ::view-transition-old(.row):only-child,
 ::view-transition-old(.hero-title):only-child {
-  animation: vt-out 180ms ease-in both;
+  animation: vt-out 180ms var(--out) both;
 }
 
 ::view-transition-new(.row):only-child,
@@ -998,6 +993,11 @@ html:active-view-transition-type(back)::view-transition-old(root) {
 ::view-transition-new(top),
 ::view-transition-old(credit),
 ::view-transition-new(credit) {
+  animation: none;
+}
+
+::view-transition-group(top),
+::view-transition-group(credit) {
   animation: none;
 }
 
@@ -1072,7 +1072,7 @@ html:active-view-transition-type(back)::view-transition-old(root) {
   }
 }
 
-.bar {
+.switch-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1081,11 +1081,11 @@ html:active-view-transition-type(back)::view-transition-old(root) {
   margin: 56px 0 20px;
 }
 
-.bar .filters {
+.switch-row .filters {
   margin: 0;
 }
 
-.bar .filters[inert]:not(.leaving),
+.switch-row .filters[inert]:not(.leaving),
 .panel[inert]:not(.leaving) {
   visibility: hidden;
 }
