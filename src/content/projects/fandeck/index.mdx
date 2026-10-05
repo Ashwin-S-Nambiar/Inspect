@@ -18,9 +18,8 @@ hero:
   alt: "Fandeck on a desktop: five paint chips from deep green to buttery white, each with white and black text samples and their contrast ratios, over the base colour, copy formats and the eight harmonies"
 ---
 
-import Clip from '../../../components/Clip.astro';
-import harmony from './harmony.mp4';
-import harmonyPoster from './harmony.jpg';
+import Annotated from '../../../components/Annotated.astro';
+import offline from './offline.webp';
 
 <Project /> takes one colour and a harmony and hands back five colours that work together, laid out like paint chips. I first built it in 2024 as Color Scheme Generator: a colour input, a dropdown of harmonies, a Get Color Scheme button and five swatches. The rebuild stayed plain HTML, CSS and JavaScript, with ten modules the browser loads directly.
 
@@ -29,20 +28,6 @@ import harmonyPoster from './harmony.jpg';
 The old version did nothing until you pressed the button. Fandeck asks the moment something changes. Pick a harmony and the request goes out at once. Drag around the picker and it waits until you've been still for 240 ms. Every new request cancels the one before it with an `AbortController`, so a slow answer about a colour you've already left can never land on top of the one you're looking at.
 
 Most answers come back quickly, so nothing on screen says "loading" unless it takes longer than 160 ms. Only then do the chips that are about to change dim a little.
-
-<Clip
-  src={harmony}
-  poster={harmonyPoster}
-  length={10.8}
-  label="a locked second chip stays green while the other four cross-fade to new colours three times, for triad, quad and complement"
-  caption="At half speed. One chip locked, then three harmonies."
-  cues={[
-    { from: 1.6, to: 3.3, text: 'Lock the second chip', x: 33.2, y: 62.9, w: 3.8, h: 5.5 },
-    { from: 3.4, to: 5.6, text: 'Triad: the free chips cross-fade one after another', x: 1.9, y: 8.3, w: 96.3, h: 66.5 },
-    { from: 5.8, to: 8.0, text: 'Each label swaps just after its colour starts', x: 40.7, y: 62.5, w: 18.7, h: 12.2 },
-    { from: 8.2, to: 10.6, text: "Complement. The locked chip hasn't moved", x: 21.3, y: 8.3, w: 18.7, h: 66.5 },
-  ]}
-/>
 
 A new colour doesn't replace the old one. It's a second layer on top that fades in over 260 ms with the Web Animations API, and the layer underneath is removed when it finishes. Each chip starts 28 ms after the one to its left, and its name and value swap 90 ms after its colour starts, so the text never sits on the wrong colour. Locked chips are skipped entirely.
 
@@ -67,6 +52,18 @@ const plans = {
 ```
 
 It isn't what the API would have returned, but it's the same kind of palette, and a toast says so: "The Color API didn't answer. Mixed locally, without names." with a Retry beside it. Colours already in the name map keep their names.
+
+<Annotated
+  src={offline}
+  alt="Fandeck with The Color API blocked: a triad mixed locally from the green base, four chips showing only their hex values, one still named Eucalyptus, and an Offline toast with a Retry button"
+  caption="A triad with the API blocked."
+  marks={[
+    { x: 33.6, y: 6.7, w: 32.8, h: 6.1, note: 'What happened, with Retry beside it' },
+    { x: 1.9, y: 62.2, w: 18.6, h: 12.6, note: 'Seen before, so it keeps its name' },
+    { x: 21.3, y: 62.2, w: 18.6, h: 12.6, note: 'Mixed locally: no name, just the value' },
+    { x: 60.1, y: 8.3, w: 18.6, h: 53.9, note: 'The triad plan: chips 4 and 5 repeat the first two hues, 12 points lighter' },
+  ]}
+/>
 
 ## The palette is the link
 
