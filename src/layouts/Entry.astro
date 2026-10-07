@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import CodeCard from '../components/CodeCard.astro';
+import Contents from '../components/Contents.astro';
 import Hero from '../components/Hero.astro';
 import ProjectLink from '../components/ProjectLink.astro';
 import Related from '../components/Related.astro';
@@ -47,6 +48,7 @@ const links = project && [
       </ol>
     </nav>
   )}
+  {sections.length > 0 && <Contents title={title} sections={sections} />}
   {sections.length > 0 && (
     <script is:inline>
       addEventListener(
@@ -141,6 +143,7 @@ const links = project && [
       .filter((h): h is HTMLElement => Boolean(h));
     let queued = false;
     let aimed: string | undefined;
+    let told: string | undefined;
     const update = () => {
       queued = false;
       let current = 'top';
@@ -152,6 +155,10 @@ const links = project && [
       for (const a of links) {
         if (a.dataset.toc === current) a.setAttribute('aria-current', 'true');
         else a.removeAttribute('aria-current');
+      }
+      if (current !== told) {
+        told = current;
+        dispatchEvent(new CustomEvent('tocchange', { detail: current }));
       }
     };
     const queue = () => {
@@ -177,18 +184,25 @@ const links = project && [
         const target = id === 'top' ? undefined : document.getElementById(id);
         if (id !== 'top' && !target) return;
         e.preventDefault();
-        const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
-        const top = target ? target.getBoundingClientRect().top + scrollY - Number.parseFloat(getComputedStyle(target).scrollMarginTop || '0') : 0;
-        const max = document.documentElement.scrollHeight - innerHeight;
-        history.replaceState(history.state, '', target ? `#${id}` : location.pathname);
-        aimed = id;
-        update();
-        if (Math.abs(Math.min(top, max) - scrollY) < 2) {
-          aimed = undefined;
-          return;
-        }
-        scrollTo({ top, behavior });
+        const sheet = a.closest('dialog');
+        const to = target ?? document.getElementById('top');
+        if (sheet?.open && to) sheet.dispatchEvent(new CustomEvent('pick', { detail: { go: () => jump(id, target), to } }));
+        else jump(id, target);
       });
+    }
+
+    function jump(id: string, target: HTMLElement | null | undefined) {
+      const behavior = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+      const top = target ? target.getBoundingClientRect().top + scrollY - Number.parseFloat(getComputedStyle(target).scrollMarginTop || '0') : 0;
+      const max = document.documentElement.scrollHeight - innerHeight;
+      history.replaceState(history.state, '', target ? `#${id}` : location.pathname);
+      aimed = id;
+      update();
+      if (Math.abs(Math.min(top, max) - scrollY) < 2) {
+        aimed = undefined;
+        return;
+      }
+      scrollTo({ top, behavior });
     }
 
     const back = document.querySelector<HTMLAnchorElement>('.back');
