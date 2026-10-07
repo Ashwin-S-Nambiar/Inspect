@@ -52,6 +52,7 @@ const wide = !narrow && src.width / src.height > 1.2;
           )}
         </div>
       </div>
+      <span class="swipe" aria-hidden="true">swipe <span>&harr;</span></span>
     </div>
   </div>
   <ol class="notes">
@@ -111,6 +112,18 @@ const wide = !narrow && src.width / src.height > 1.2;
       return best;
     };
 
+    let moved = false;
+    const edges = () => {
+      const max = pan.scrollWidth - pan.clientWidth;
+      const at = pan.scrollLeft;
+      if (at > 4) moved = true;
+      pan.dataset.edge = max <= 1 ? '' : at <= 1 ? 'end' : at >= max - 1 ? 'start' : 'both';
+      fig.toggleAttribute('data-hint', max > 1 && !moved);
+    };
+    pan.addEventListener('scroll', edges, { passive: true });
+    addEventListener('resize', edges);
+    edges();
+
     const reveal = (i: number) => {
       if (i < 0 || pan.scrollWidth <= pan.clientWidth) return;
       const [x, , w] = marks[i];
@@ -167,6 +180,39 @@ const wide = !narrow && src.width / src.height > 1.2;
 
   .pan::-webkit-scrollbar {
     display: none;
+  }
+
+  .pan[data-edge='end'] {
+    mask-image: linear-gradient(90deg, #000 calc(100% - 40px), rgb(0 0 0 / 0.35));
+  }
+
+  .pan[data-edge='start'] {
+    mask-image: linear-gradient(270deg, #000 calc(100% - 40px), rgb(0 0 0 / 0.35));
+  }
+
+  .pan[data-edge='both'] {
+    mask-image: linear-gradient(90deg, rgb(0 0 0 / 0.35), #000 40px, #000 calc(100% - 40px), rgb(0 0 0 / 0.35));
+  }
+
+  .swipe {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--card);
+    box-shadow: 0 0 0 1px var(--card-line), 0 2px 8px rgb(20 20 19 / 0.08);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    line-height: 16px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  [data-hint] .swipe {
+    opacity: 1;
   }
 
   .shot :global(img) {
