@@ -15,12 +15,13 @@ project:
 thumb: ./thumb.png
 hero:
   image: ./hero.webp
-  alt: "The v3 portfolio on a desktop: a paragraph about me on the left with highlighted links to projects, labs, x and github, and a reel of project cards curving down the right side"
+  alt: "The v3 portfolio on a desktop: a paragraph about me on the left with highlighted links to projects, labs, x and github, ending in the song I last listened to and the show I last watched, and a reel of project cards curving down the right side"
 ---
 
 import Annotated from '../../../components/Annotated.astro';
 import Clip from '../../../components/Clip.astro';
 import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import listening from './listening.webp';
 import masDesktop from './mas-desktop.webp';
 import masPhone from './mas-phone.webp';
 import masTablet from './mas-tablet.webp';
@@ -28,7 +29,7 @@ import reelPoster from './reel.jpg';
 import reel from './reel.mp4';
 import slow from './slow.webp';
 
-<Project /> is the third version of my portfolio, at ashwin.co.in. The home page is one paragraph about me and a reel of things I built, each card playing a recording of the real app. Projects and labs have their own pages, and every project gets an essay with figures.
+<Project /> is the third version of my portfolio, at ashwin.co.in. It took that address over from v2 on 7 October 2026, and v2 stays up at v2.ashwin.co.in. The home page is one paragraph about me, ending with what I last listened to and watched, and a reel of things I built, each card playing a recording of the real app. Projects and labs have their own pages, and every project gets an essay with figures.
 
 I started it on 25 August 2026, in React, TypeScript and Vite, and kept one rule from the start: no animation library. Every moving thing is a short function I can read, which is what this write-up is about.
 
@@ -83,6 +84,40 @@ The target is zero while held and the crossing speed otherwise, and `tau` is 260
 ## Two strips on a phone
 
 A phone has no room beside the paragraph, so below 768 px wide, or under 560 px tall, the curve becomes two straight strips, one above the paragraph and one below, running at 30 px a second in opposite directions. Each strip holds its cards twice and moves by one period, so the loop never shows a seam.
+
+## The last song and the last show
+
+The paragraph ends with the last thing I played on Spotify and the last thing I watched on Simkl. The site is a static Vite build, so two small Vercel functions fetch them. One trades a Spotify refresh token for the current or [last played track](/notes/last-played-not-nothing/). The other passes through [simkl-api](https://github.com/Ashwin-S-Nambiar/simkl-api), a small server of mine that [finds the newest thing](/notes/from-trakt-to-simkl/) in my Simkl history. The browser never calls either service, and the line isn't in the prerendered HTML: it opens once the data lands, so nothing above it jumps.
+
+Neither service sends a title that fits in a sentence. Spotify sends "Kesariya (From "Brahmastra")", "worry - Slowed", or a title with four artists credited inside the brackets. Before a title goes in a chip, it's split into the song, a version, the film it's from and any featured artists:
+
+```ts
+for (const group of groups) {
+  const feat = /(?:^|,\s*|\s)(?:feat\.?|ft\.?|featuring|with)\s+(.+)$/i.exec(group);
+  if (feat) featured.push(...feat[1].split(/\s*(?:,|&| and )\s*/));
+  const credits = credited.some((a) => group.toLowerCase().includes(a.toLowerCase()));
+  if (feat || credits) continue;
+  if (VERSION.test(group)) version = group;
+  else context = group.replace(/^from\s+/i, "").replace(/^["'“]|["'”]$/g, "");
+}
+```
+
+The sentence names one artist or two, and past that "pritam and 2 others", put together with `Intl.ListFormat`. A chip is about 15 characters wide; a longer title fades out at the edge, and on hover it slides by exactly the part that's hidden.
+
+<Annotated
+  src={listening}
+  alt="the end of the home paragraph with the bleach chip hovered: a card above it shows the bleach poster, the title bleach, then thousand-year blood war and the calamity on two lines, the episode title the end two world, and e8 and 14 sep"
+  caption="My Simkl entry for Bleach, at 2x."
+  marks={[
+    { x: 69.6, y: 20.7, w: 24.7, h: 13.8, note: 'The English title, split at the colon and then the dash' },
+    { x: 69.6, y: 37.4, w: 24.7, h: 6.9, note: "The episode's own title, from Simkl's episode list" },
+    { x: 3.9, y: 78.3, w: 51.1, h: 14.8, note: 'A subtitle under 24 characters stays in the sentence' },
+  ]}
+/>
+
+Simkl's history only keeps an anime's original title, so Bleach arrives as "Bleach: Sennen Kessen Hen - Kashin Tan". simkl-api looks up the English one, takes off the "season 17" Simkl adds to it, and splits what's left into show, subtitle and arc. Simkl lists a split season as its own entry, which is where "The Calamity" comes from. One Piece is a single 1180 episode entry, so it has no arc, and its episode title carries the story instead.
+
+If nothing has played for a week, the music half goes. If one service is down, its half goes, and if both are, the line isn't there at all and the paragraph reads as it did before.
 
 ## Columns that know their heights
 
@@ -142,3 +177,5 @@ That last part had a bug until today. While a phone clip loads, its screen is al
 - **The recordings stay light.** The site follows your system into dark mode, but the clips were recorded in light mode, so they glow on a dark page.
 - **Client rendered.** The skeletons, titles and metadata are written at build time, but the page itself needs JavaScript.
 - **One reel, one speed.** Holding the reel is the only control; there's no way to scrub it.
+- **A minute behind.** The Spotify function caches for 30 seconds and the page asks again every minute, so the line can trail a song change.
+- **No card on a phone.** On a touch screen the chips are plain links to Spotify and Simkl; the card only opens with a mouse or the keyboard.
