@@ -214,6 +214,13 @@
   margin: 36px 0 12px;
 }
 
+@media (max-width: 1179px) {
+  .prose h2,
+  .prose h3 {
+    scroll-margin-top: calc(env(safe-area-inset-top) + 68px);
+  }
+}
+
 .prose h2 + *,
 .prose h3 + * {
   margin-top: 0;

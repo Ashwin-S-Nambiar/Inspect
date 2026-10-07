@@ -1,0 +1,566 @@
+---
+interface Props {
+  title: string;
+  sections: { slug: string; text: string }[];
+}
+
+const { title, sections } = Astro.props;
+const pad = (n: number) => String(n).padStart(2, '0');
+---
+
+<div class="crumb">
+  <div class="crumb-in">
+    <button type="button" class="crumb-btn" aria-haspopup="dialog" aria-controls="contents" aria-expanded="false">
+      <span class="sr">On this page: </span>
+      <span class="crumb-t">{title}</span>
+      <span class="sr crumb-sr"></span>
+      <span class="crumb-n" aria-hidden="true"></span>
+      <svg class="ic" aria-hidden="true"><use href="#i-down"></use></svg>
+    </button>
+  </div>
+</div>
+
+<dialog class="contents" id="contents" aria-labelledby="contents-h">
+  <div class="scrim"></div>
+  <div class="sheet">
+    <div class="sheet-head">
+      <span class="grip" aria-hidden="true"></span>
+      <h2 id="contents-h">On this page</h2>
+    </div>
+    <ol class="sheet-list">
+      <li>
+        <a href="#top" data-toc="top">
+          <span class="sheet-n" aria-hidden="true"></span>
+          <span class="sheet-t">{title}</span>
+        </a>
+      </li>
+      {sections.map((h, i) => (
+        <li>
+          <a href={`#${h.slug}`} data-toc={h.slug}>
+            <span class="sheet-n" aria-hidden="true">{pad(i + 1)}</span>
+            <span class="sheet-t">{h.text}</span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  </div>
+</dialog>
+
+<script>
+  type Pick = { go: () => void; to: HTMLElement };
+
+  const pad = (n: number) => String(n).padStart(2, '0');
+
+  function init() {
+    const crumb = document.querySelector<HTMLElement>('.crumb');
+    const dialog = document.querySelector<HTMLDialogElement>('#contents');
+    const title = document.querySelector<HTMLElement>('.post-title');
+    const btn = crumb?.querySelector<HTMLButtonElement>('.crumb-btn');
+    const label = crumb?.querySelector<HTMLElement>('.crumb-t');
+    const count = crumb?.querySelector<HTMLElement>('.crumb-n');
+    const said = crumb?.querySelector<HTMLElement>('.crumb-sr');
+    const sheet = dialog?.querySelector<HTMLElement>('.sheet');
+    const scrim = dialog?.querySelector<HTMLElement>('.scrim');
+    const head = dialog?.querySelector<HTMLElement>('.sheet-head');
+    const list = dialog?.querySelector<HTMLElement>('.sheet-list');
+    if (!crumb || !dialog || !title || !btn || !label || !count || !said || !sheet || !scrim || !head || !list) return;
+
+    const links = [...list.querySelectorAll<HTMLAnchorElement>('[data-toc]')];
+    const total = links.length - 1;
+    const phone = matchMedia('(max-width: 767px)');
+    const wide = matchMedia('(min-width: 1180px)');
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+    const css = getComputedStyle(document.documentElement);
+    const drawer = css.getPropertyValue('--drawer').trim();
+    const out = css.getPropertyValue('--out').trim();
+
+    let shown = -1;
+    const show = (id: string) => {
+      const i = Math.max(0, links.findIndex((a) => a.dataset.toc === id));
+      if (i === shown) return;
+      const from = shown;
+      shown = i;
+      label.textContent = links[i].querySelector('.sheet-t')?.textContent ?? '';
+      count.textContent = i ? `${pad(i)}/${pad(total)}` : '';
+      said.textContent = i ? `, section ${i} of ${total}` : '';
+      if (from < 0 || !crumb.hasAttribute('data-on')) return;
+      const dy = reduced.matches ? 0 : i > from ? 6 : -6;
+      for (const el of [label, count]) {
+        el.animate([{ opacity: 0, transform: `translateY(${dy}px)` }, { opacity: 1, transform: 'none' }], {
+          duration: 200,
+          easing: out,
+        });
+      }
+    };
+    show(list.querySelector<HTMLElement>('[aria-current="true"]')?.dataset.toc ?? 'top');
+    addEventListener('tocchange', (e) => show((e as CustomEvent<string>).detail));
+
+    new IntersectionObserver(
+      ([e]) => crumb.toggleAttribute('data-on', !e.isIntersecting && e.boundingClientRect.bottom < innerHeight / 2),
+      { rootMargin: `-${crumb.offsetHeight || 44}px 0px 0px 0px` },
+    ).observe(title);
+
+    let y = 0;
+    let anims: Animation[] = [];
+    let closing = false;
+    let pending: Pick | undefined;
+    const height = () => sheet.offsetHeight || 1;
+    const shade = (v: number) => (phone.matches ? Math.max(0, 1 - Math.max(0, v) / height()) : 1);
+    const stop = () => {
+      for (const a of anims) a.cancel();
+      anims = [];
+    };
+    const place = (v: number) => {
+      y = v;
+      sheet.style.transform = v ? `translateY(${v}px)` : '';
+      scrim.style.opacity = String(shade(v));
+    };
+    const live = () => new DOMMatrix(getComputedStyle(sheet).transform).m42;
+    const glide = (to: number, duration: number, easing: string) => {
+      stop();
+      const from = y;
+      anims = [
+        sheet.animate([{ transform: `translateY(${from}px)` }, { transform: `translateY(${to}px)` }], { duration, easing }),
+        scrim.animate([{ opacity: shade(from) }, { opacity: shade(to) }], { duration, easing }),
+      ];
+      place(to);
+      return anims[0].finished.catch(() => {});
+    };
+    const fade = (from: number, to: number, duration: number) => {
+      stop();
+      anims = [sheet, scrim].map((el) => el.animate([{ opacity: from }, { opacity: to }], { duration, easing: out, fill: 'forwards' }));
+      return anims[0].finished.catch(() => {});
+    };
+    const settle = 'cubic-bezier(0.4, 0, 0.2, 1)';
+    const drop = () => {
+      stop();
+      anims = [
+        sheet.animate([{ transform: 'translateY(-100%)' }, { transform: 'none' }], { duration: 340, easing: drawer }),
+        scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 340, easing: out }),
+      ];
+    };
+    const lift = () => {
+      const from = getComputedStyle(sheet).transform;
+      const shown = Number(getComputedStyle(scrim).opacity);
+      stop();
+      anims = [
+        sheet.animate([{ transform: from === 'none' ? 'none' : from }, { transform: 'translateY(-100%)' }], {
+          duration: 240,
+          easing: settle,
+          fill: 'forwards',
+        }),
+        scrim.animate([{ opacity: shown }, { opacity: 0 }], { duration: 240, easing: settle, fill: 'forwards' }),
+      ];
+      return anims[0].finished.catch(() => {});
+    };
+
+    const open = () => {
+      if (dialog.open || wide.matches) return;
+      history.pushState({ ...history.state, toc: true }, '');
+      closing = false;
+      dialog.showModal();
+      btn.setAttribute('aria-expanded', 'true');
+      const current = links.find((a) => a.getAttribute('aria-current') === 'true') ?? links[0];
+      current.focus({ preventScroll: true });
+      current.scrollIntoView({ block: 'nearest' });
+      if (reduced.matches) fade(0, 1, 200);
+      else if (phone.matches) {
+        place(height());
+        glide(0, 380, drawer);
+      } else {
+        drop();
+      }
+    };
+
+    const shut = async () => {
+      if (!dialog.open || closing) return;
+      closing = true;
+      const picked = pending;
+      pending = undefined;
+      picked?.go();
+      if (reduced.matches) await fade(1, 0, 150);
+      else if (phone.matches) await glide(height(), 200, out);
+      else await lift();
+      dialog.close();
+      if (picked) {
+        if (!picked.to.hasAttribute('tabindex')) picked.to.setAttribute('tabindex', '-1');
+        picked.to.focus({ preventScroll: true });
+      }
+    };
+
+    const requestClose = (pick?: Pick) => {
+      if (!dialog.open || closing) return;
+      pending = pick;
+      if (history.state?.toc) history.back();
+      else shut();
+    };
+
+    dialog.addEventListener('close', () => {
+      stop();
+      place(0);
+      sheet.style.opacity = '';
+      scrim.style.opacity = '';
+      btn.setAttribute('aria-expanded', 'false');
+      if (!closing && history.state?.toc) history.back();
+      closing = false;
+    });
+    addEventListener('popstate', () => {
+      if (dialog.open) shut();
+    });
+    if (history.state?.toc) history.replaceState({ ...history.state, toc: undefined }, '');
+
+    btn.addEventListener('click', open);
+    scrim.addEventListener('click', () => requestClose());
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) requestClose();
+    });
+    dialog.addEventListener('cancel', (e) => {
+      e.preventDefault();
+      requestClose();
+    });
+    dialog.addEventListener('pick', (e) => requestClose((e as CustomEvent<Pick>).detail));
+    wide.addEventListener('change', () => {
+      if (wide.matches) requestClose();
+    });
+    phone.addEventListener('change', () => {
+      stop();
+      place(0);
+    });
+
+    let drag: { start: number; base: number; samples: [number, number][]; active: boolean; body: boolean } | undefined;
+    const begin = (cy: number, body: boolean) => {
+      if (!phone.matches || !dialog.open || closing) return;
+      const now = live();
+      stop();
+      place(now);
+      drag = { start: cy, base: now, samples: [[performance.now(), cy]], active: false, body };
+    };
+    const move = (cy: number) => {
+      if (!drag) return false;
+      const dy = cy - drag.start;
+      if (!drag.active) {
+        if (drag.body && (dy < 0 || list.scrollTop > 0)) {
+          drag = undefined;
+          return false;
+        }
+        if (!drag.body && Math.abs(dy) < 4) return false;
+        if (drag.body && dy === 0) return false;
+        drag.active = true;
+      }
+      const raw = drag.base + dy;
+      place(raw < 0 ? -Math.sqrt(-raw) * 2 : raw);
+      const now = performance.now();
+      drag.samples.push([now, cy]);
+      while (drag.samples.length > 2 && now - drag.samples[0][0] > 90) drag.samples.shift();
+      return true;
+    };
+    const end = () => {
+      if (!drag) return;
+      const d = drag;
+      drag = undefined;
+      const [t0, y0] = d.samples[0];
+      const [t1, y1] = d.samples[d.samples.length - 1];
+      const v = (y1 - y0) / Math.max(1, t1 - t0);
+      if (d.active && (y > height() * 0.3 || (v > 0.5 && y1 - d.start > 24))) requestClose();
+      else if (y !== 0) glide(0, 380, drawer);
+    };
+
+    head.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      head.setPointerCapture(e.pointerId);
+      begin(e.clientY, false);
+    });
+    head.addEventListener('pointermove', (e) => move(e.clientY));
+    head.addEventListener('pointerup', end);
+    head.addEventListener('pointercancel', end);
+
+    list.addEventListener('touchstart', (e) => begin(e.touches[0].clientY, true), { passive: true });
+    list.addEventListener(
+      'touchmove',
+      (e) => {
+        if (move(e.touches[0].clientY)) e.preventDefault();
+      },
+      { passive: false },
+    );
+    list.addEventListener('touchend', end);
+    list.addEventListener('touchcancel', end);
+  }
+
+  init();
+</script>
+
+<style>
+  .crumb {
+    position: fixed;
+    inset: 0 0 auto;
+    z-index: 40;
+    padding-top: env(safe-area-inset-top);
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 140ms var(--out),
+      visibility 0s linear 140ms;
+  }
+
+  .crumb[data-on] {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 220ms var(--out),
+      visibility 0s;
+  }
+
+  .crumb-in {
+    max-width: calc(var(--col) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding: 0 max(var(--gutter), env(safe-area-inset-right)) 0 max(var(--gutter), env(safe-area-inset-left));
+    transform: translateY(4px);
+    transition: transform 140ms var(--out);
+  }
+
+  .crumb[data-on] .crumb-in {
+    transform: none;
+    transition: transform 320ms var(--out);
+  }
+
+  .crumb-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: calc(100% + 20px);
+    height: 44px;
+    margin-inline: -10px;
+    padding: 0 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1;
+    text-align: left;
+    color: var(--strong);
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    transition: background-color 80ms ease;
+  }
+
+  .crumb-btn:active {
+    background: var(--hover);
+  }
+
+  .crumb-t {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    font-weight: 540;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .crumb-n {
+    min-width: 5ch;
+    font-family: var(--mono);
+    font-size: 12px;
+    text-align: right;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .crumb-btn .ic {
+    width: 14px;
+    height: 14px;
+    color: var(--faint);
+    transition: transform 200ms var(--out);
+  }
+
+  .crumb-btn[aria-expanded="true"] .ic {
+    transform: rotate(180deg);
+  }
+
+  .contents {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    overflow: hidden;
+    overscroll-behavior: contain;
+  }
+
+  .contents::backdrop {
+    background: transparent;
+  }
+
+  :global(html:has(.contents[open])) {
+    overflow: hidden;
+  }
+
+  .scrim {
+    position: absolute;
+    inset: 0;
+    background: rgb(10 10 9 / 0.32);
+  }
+
+  .sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(100%, 560px);
+    max-height: 86dvh;
+    margin-inline: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--card);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -1px 0 var(--card-line);
+  }
+
+  .sheet-head {
+    flex: none;
+    padding: 8px 20px 10px;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .grip {
+    display: block;
+    width: 36px;
+    height: 5px;
+    margin: 0 auto 14px;
+    border-radius: 3px;
+    background: var(--ul);
+  }
+
+  .sheet-head h2 {
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--faint);
+  }
+
+  .sheet-list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0 8px 12px;
+    list-style: none;
+  }
+
+  .sheet-list a {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    min-height: 44px;
+    padding: 11px 12px;
+    border-radius: 10px;
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--muted);
+    text-decoration: none;
+    -webkit-touch-callout: none;
+    transition:
+      background-color 80ms ease,
+      color 150ms ease;
+  }
+
+  .sheet-list a:active {
+    background: var(--hover);
+  }
+
+  .sheet-n {
+    flex: none;
+    width: 2ch;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .sheet-list a[aria-current="true"] {
+    color: var(--strong);
+    background: var(--hover);
+  }
+
+  .sheet-list a[aria-current="true"] .sheet-n {
+    color: var(--accent);
+  }
+
+  @media (min-width: 768px) {
+    .contents {
+      inset: calc(env(safe-area-inset-top) + 45px) 0 0;
+      width: auto;
+      height: auto;
+    }
+
+    .scrim {
+      background: rgb(10 10 9 / 0.16);
+    }
+
+    .sheet {
+      top: 0;
+      bottom: auto;
+      width: auto;
+      max-height: min(70dvh, 100% - 32px);
+      margin: 0;
+      padding: 12px max(var(--gutter), env(safe-area-inset-right)) 14px max(var(--gutter), env(safe-area-inset-left));
+      background: var(--bg);
+      border-bottom: 1px solid var(--line);
+      border-radius: 0 0 14px 14px;
+      box-shadow: 0 16px 32px -16px rgb(20 20 19 / 0.18);
+    }
+
+    .sheet-head {
+      width: var(--col);
+      margin-inline: auto;
+      padding: 0 0 6px;
+    }
+
+    .grip {
+      display: none;
+    }
+
+    .sheet-list {
+      width: calc(var(--col) + 44px);
+      margin-left: calc(50% - var(--col) / 2 - 44px);
+      padding: 0;
+    }
+
+    .sheet-n {
+      width: 20px;
+    }
+
+    .sheet-list a {
+      min-height: 40px;
+      padding: 9px 12px;
+      font-size: 14px;
+    }
+  }
+
+  @media (min-width: 1180px) {
+    .crumb,
+    .contents {
+      display: none;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .crumb-btn:hover,
+    .sheet-list a:hover {
+      background: var(--hover);
+    }
+
+    .sheet-list a:hover {
+      color: var(--strong);
+    }
+  }
+</style>
