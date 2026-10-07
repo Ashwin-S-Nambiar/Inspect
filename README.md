@@ -27,7 +27,7 @@ there are two kinds of post. a **project write-up** is the story of one project:
   &nbsp;
   <img src="./docs/screenshots/Inspect-6.webp" width="32%" alt="the top of the tenzies write-up on a phone: the back link, the title, the date and read time, the dek and the hero">
   &nbsp;
-  <img src="./docs/screenshots/Inspect-7.webp" width="32%" alt="a close-up of the foot of a chit receipt in dark mode on a phone, with a blue selection box round the qr code and its note highlighted in the list under it">
+  <img src="./docs/screenshots/Inspect-7.webp" width="32%" alt="a close-up of the foot of a chit receipt in dark mode on a phone, under the contents bar naming the section, with a blue selection box round the qr code and its note highlighted in the list under it">
 </p>
 
 - **projects and notes.** one switch on the home page, with filters for the notes. it swaps the list in place, so the page doesn't reload and nothing under your finger moves.
