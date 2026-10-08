@@ -87,7 +87,7 @@ A phone has no room beside the paragraph, so below 768 px wide, or under 560 px 
 
 ## The last song and the last show
 
-The paragraph ends with the last thing I played on Spotify and the last thing I watched on Simkl. The site is a static Vite build, so two small Vercel functions fetch them. One trades a Spotify refresh token for the current or [last played track](/notes/last-played-not-nothing/). The other passes through [simkl-api](https://github.com/Ashwin-S-Nambiar/simkl-api), a small server of mine that [finds the newest thing](/notes/from-trakt-to-simkl/) in my Simkl history. The browser never calls either service, and the line isn't in the prerendered HTML: it opens once the data lands, so nothing above it jumps.
+The paragraph ends with the last thing I played on Spotify and the last thing I watched on Simkl. The site is a static Vite build, so two small Vercel functions fetch them. One trades a Spotify refresh token for the current or [last played track](/notes/last-played-not-nothing/). The other passes through [simkl-api](https://github.com/Ashwin-S-Nambiar/simkl-api), a small server of mine that [finds the newest thing](/notes/from-trakt-to-simkl/) in my Simkl history. The browser never calls either service, and the line isn't in the prerendered HTML: it opens once the data and thumbnail preloads settle, easing the extra lines into the paragraph.
 
 Neither service sends a title that fits in a sentence. Spotify sends "Kesariya (From "Brahmastra")", "worry - Slowed", or a title with four artists credited inside the brackets. Before a title goes in a chip, it's split into the song, a version, the film it's from and any featured artists:
 
@@ -104,18 +104,26 @@ for (const group of groups) {
 
 The sentence names one artist or two, and past that "pritam and 2 others", put together with `Intl.ListFormat`. A chip is about 15 characters wide; a longer title fades out at the edge, and on hover it slides by exactly the part that's hidden.
 
+I tried a larger pair of floating cards, then settled on a compact cover beside a column of text. The cover keeps its full shape, and a peach or blue rule connects the details to the highlighted title. The preview opens inside the paragraph's flow, so the surrounding lines move with it. The song slides down from the top of its space; the show rises from the bottom. There is no tilt or transparent fade over the text behind it.
+
+The first version could open twice when I approached a highlight from below. Expanding the paragraph moved the trigger away from the pointer, which closed it, then put it back under the pointer. Now only a physical pointer crossing starts a preview. While it is open, the hit area joins the highlight's original position, its current position and the visible card. That keeps the card reachable while the layout moves.
+
+There is a 90 ms pause before opening and a 200 ms grace period before closing. When I move straight to the other highlight, the outgoing preview stays open while the next one picks up the hover, then the two heights transition together. Hovering the plain sentence never starts it.
+
 <Annotated
   src={listening}
-  alt="the end of the home paragraph with the bleach chip hovered: a card above it shows the bleach poster, the title bleach, then thousand-year blood war and the calamity on two lines, the episode title the end two world, and e8 and 14 sep"
-  caption="My Simkl entry for Bleach, at 2x."
+  alt="The listening and watching lines with Asur expanded inline: its full poster beside the title, Ashes from the past, S1 E4, a relative watched time and an IMDb rating of 8.4 out of 10"
+  caption="The compact Simkl preview, captured from the local build at 2x."
   marks={[
-    { x: 69.6, y: 20.7, w: 24.7, h: 13.8, note: 'The English title, split at the colon and then the dash' },
-    { x: 69.6, y: 37.4, w: 24.7, h: 6.9, note: "The episode's own title, from Simkl's episode list" },
-    { x: 3.9, y: 78.3, w: 51.1, h: 14.8, note: 'A subtitle under 24 characters stays in the sentence' },
+    { x: 28.5, y: 23.5, w: 13.7, h: 16, note: 'Only the highlighted title starts the preview; the surrounding sentence does not' },
+    { x: 17.1, y: 55.6, w: 46.4, h: 17, note: 'The full title and episode sit beside uncropped artwork; the whole preview is a link' },
+    { x: 17.1, y: 76, w: 46.4, h: 6.2, note: 'Season, episode, watched time and rating stay together in the metadata row' },
   ]}
 />
 
-Simkl's history only keeps an anime's original title, so Bleach arrives as "Bleach: Sennen Kessen Hen - Kashin Tan". simkl-api looks up the English one, takes off the "season 17" Simkl adds to it, and splits what's left into show, subtitle and arc. Simkl lists a split season as its own entry, which is where "The Calamity" comes from. One Piece is a single 1180 episode entry, so it has no arc, and its episode title carries the story instead.
+The sentence already says "last listened" or "last watched", so the preview does not repeat it. A playing track gets "now playing"; a past one gets its relative time when Spotify supplies it. The show keeps its episode title, watched time and rating, and shows an episode total only for entries numbered without seasons. Clicking the preview opens the same resource as its highlight. Tab moves from the highlight into the card, and Escape closes it and returns focus.
+
+Simkl's history only keeps an anime's original title, so Bleach arrives as "Bleach: Sennen Kessen Hen - Kashin Tan". simkl-api looks up the English one, takes off the "season 17" Simkl adds to it, and splits what's left into show, subtitle and arc. Simkl lists a split season as its own entry, which is where "The Calamity" comes from. One Piece uses one continuing entry, so its episode title carries the story instead of an arc label.
 
 If nothing has played for a week, the music half goes. If one service is down, its half goes, and if both are, the line isn't there at all and the paragraph reads as it did before.
 
@@ -170,7 +178,7 @@ A small inline script drops the skeleton when the URL isn't the one it was built
 
 Media that arrives within 380 ms, or comes from the cache, or lands off screen, just appears; anything that shows a placeholder for a split second looks like a flicker. Slower media shows a blurred preview of itself, made at build time and stored with the image's real size, and then sharpens in. A phone recording blurs as one picture with its frame, status bar and island, and a failed image keeps its blurred colours with a small image-off mark instead of the browser's broken icon.
 
-That last part had a bug until today. While a phone clip loads, its screen is allowed to spill past its rounded corners so the blur can bleed out softly. That was switched back off only when a clip ended up "ready", and a clip that landed late, while you were watching, ended up "slow" instead. So on a slow connection the screen never got its corners back, and the red of a film poster showed as a thin line down the edge of the phone. The spill now only applies while loading or after an error.
+That last part had a bug during the rebuild. While a phone clip loads, its screen is allowed to spill past its rounded corners so the blur can bleed out softly. That was switched back off only when a clip ended up "ready", and a clip that landed late, while you were watching, ended up "slow" instead. So on a slow connection the screen never got its corners back, and the red of a film poster showed as a thin line down the edge of the phone. The spill now only applies while loading or after an error.
 
 ## Rough edges
 
@@ -178,4 +186,4 @@ That last part had a bug until today. While a phone clip loads, its screen is al
 - **Client rendered.** The skeletons, titles and metadata are written at build time, but the page itself needs JavaScript.
 - **One reel, one speed.** Holding the reel is the only control; there's no way to scrub it.
 - **A minute behind.** The Spotify function caches for 30 seconds and the page asks again every minute, so the line can trail a song change.
-- **No card on a phone.** On a touch screen the chips are plain links to Spotify and Simkl; the card only opens with a mouse or the keyboard.
+- **No card on a phone.** On a touch screen the chips are plain links to Spotify and Simkl; the preview is reserved for a fine pointer or keyboard focus on desktop.
