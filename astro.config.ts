@@ -91,5 +91,59 @@ export default defineConfig({
         variants: pair('geist-mono', { weight: '400 600', style: 'normal' }),
       },
     },
+    {
+      provider: fontProviders.local(),
+      name: 'Space Grotesk',
+      cssVariable: '--font-grotesk',
+      display: 'block',
+      fallbacks: ['Arial', 'sans-serif'],
+      options: {
+        variants: [
+          {
+            src: ['./src/assets/fonts/space-grotesk-latin.woff2'],
+            weight: '300 700',
+            style: 'normal',
+          },
+        ],
+      },
+    },
+    {
+      provider: fontProviders.local(),
+      name: 'Atkinson Hyperlegible Next',
+      cssVariable: '--font-atkinson',
+      display: 'block',
+      fallbacks: ['Arial', 'sans-serif'],
+      options: {
+        variants: [
+          {
+            src: ['./src/assets/fonts/atkinson-hyperlegible-next.woff2'],
+            weight: '200 800',
+            style: 'normal',
+          },
+        ],
+      },
+    },
+    {
+      provider: fontProviders.local(),
+      name: 'Azeret Mono',
+      cssVariable: '--font-azeret',
+      display: 'block',
+      fallbacks: ['Courier New', 'monospace'],
+      options: {
+        variants: [
+          { src: ['./src/assets/fonts/azeret-mono.woff2'], weight: '100 900', style: 'normal' },
+        ],
+      },
+    },
+    {
+      provider: fontProviders.local(),
+      name: 'osifont',
+      cssVariable: '--font-osifont',
+      display: 'block',
+      fallbacks: ['Arial', 'sans-serif'],
+      options: {
+        variants: [{ src: ['./src/assets/fonts/osifont.woff2'], weight: '400', style: 'normal' }],
+      },
+    },
   ],
 });
