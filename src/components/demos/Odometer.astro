@@ -1,35 +1,28 @@
 ---
+import { Font } from 'astro:assets';
+
 interface Props {
   start?: number;
   caption?: string;
 }
 
-const { start = 1299, caption } = Astro.props;
-const digits = [...String(start)];
+const { start = 1298, caption } = Astro.props;
 ---
+
+<Font cssVariable="--font-grotesk" />
 
 <figure class="fig odo" data-odo data-start={start}>
   <div class="stage">
     <div class="stage-in">
-      <div class="view">
-        <div class="readout" aria-hidden="true">
-          {digits.map((d, i) => (
-            <span class="col" data-key={`p${digits.length - 1 - i}`}>
-              <span class="sizer">{d}</span>
-              <span class="strip" style={`--row: ${Number(d) + 10}`}>
-                {Array.from({ length: 20 }, (_, n) => <span>{n % 10}</span>)}
-              </span>
-            </span>
-          ))}
+      <div class="lab">
+        <div class="readout fixed" aria-hidden="true"></div>
+        <p class="delta" aria-hidden="true">&nbsp;</p>
+        <p class="sr" role="status">{start.toLocaleString('en-US')}</p>
+        <div class="keys">
+          <button type="button" class="key" data-step="-1"><span aria-hidden="true">&minus;1</span><span class="sr">take one away</span></button>
+          <button type="button" class="key" data-step="1"><span aria-hidden="true">+1</span><span class="sr">add one</span></button>
+          <button type="button" class="key wide" data-jump>jump</button>
         </div>
-        <p class="said sr" aria-live="polite">&nbsp;</p>
-      </div>
-      <div class="controls keys">
-        <button type="button" class="ctl" data-step="-1">−1</button>
-        <button type="button" class="ctl" data-step="1">+1</button>
-        <button type="button" class="ctl" data-step="-900">−900</button>
-        <button type="button" class="ctl" data-step="900">+900</button>
-        <button type="button" class="ctl primary" data-jump>Jump a place</button>
       </div>
       <fieldset class="controls rules">
         <legend class="sr">Rules</legend>
@@ -45,35 +38,69 @@ const digits = [...String(start)];
 <script>
   const DIGITS = 10;
   const ROWS = DIGITS * 2;
-  const digitAt = (row: number) => ((row % DIGITS) + DIGITS) % DIGITS;
+  const JUMPS = [-1000, 9000, -8000];
+  const ROLL = 460;
+  const STAGGER = 35;
   type Dir = 'down' | 'up';
+  type Column = { kind: 'digit'; place: number; digit: number } | { kind: 'sep'; place: number; char: string };
+  type Cell = { el: HTMLElement; column: Column; strip?: HTMLElement; sizer?: HTMLElement; row: number; leaving: boolean };
+
+  const digitAt = (row: number) => ((row % DIGITS) + DIGITS) % DIGITS;
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
 
   function rollTo(row: number, digit: number, dir: Dir) {
     const down = dir === 'down';
-    const step = down
-      ? (digitAt(row) - digit + DIGITS) % DIGITS
-      : (digit - digitAt(row) + DIGITS) % DIGITS;
+    const step = down ? (digitAt(row) - digit + DIGITS) % DIGITS : (digit - digitAt(row) + DIGITS) % DIGITS;
     const next = down ? row - step : row + step;
     if (next >= 0 && next < ROWS) return { rebase: null as number | null, row: next };
     const rebase = down ? row + DIGITS : row - DIGITS;
     return { rebase, row: down ? rebase - step : rebase + step };
   }
 
-  const shortest = (from: number, to: number): Dir =>
-    (to - from + DIGITS) % DIGITS <= 5 ? 'up' : 'down';
+  const shortest = (from: number, to: number): Dir => ((to - from + DIGITS) % DIGITS <= 5 ? 'up' : 'down');
+
+  function columnsOf(value: number): Column[] {
+    const digits = String(Math.max(0, Math.floor(value)));
+    const out: Column[] = [];
+    for (let i = 0; i < digits.length; i++) {
+      const place = digits.length - 1 - i;
+      if (i > 0 && (place + 1) % 3 === 0) out.push({ kind: 'sep', place, char: ',' });
+      out.push({ kind: 'digit', place, digit: Number(digits[i]) });
+    }
+    return out;
+  }
+
+  const reading = (a: Column, b: Column) =>
+    a.place !== b.place ? b.place - a.place : a.kind === b.kind ? 0 : a.kind === 'sep' ? -1 : 1;
 
   for (const fig of document.querySelectorAll<HTMLElement>('[data-odo]')) {
     const readout = fig.querySelector<HTMLElement>('.readout');
-    const said = fig.querySelector<HTMLElement>('.said');
-    if (!readout || !said) continue;
+    const delta = fig.querySelector<HTMLElement>('.delta');
+    const said = fig.querySelector<HTMLElement>('[role="status"]');
+    if (!readout || !delta || !said) continue;
+    const rule = (k: string) => fig.querySelector<HTMLInputElement>(`[data-rule="${k}"]`)?.checked ?? true;
     let value = Number(fig.dataset.start) || 0;
-    const rule = (k: string) =>
-      fig.querySelector<HTMLInputElement>(`[data-rule="${k}"]`)?.checked ?? true;
-    const cols = new Map<string, { el: HTMLElement; strip: HTMLElement; row: number; sizer: HTMLElement }>();
+    let jump = 0;
+    const cells = new Map<string, Cell>();
 
-    const column = (digit: number) => {
+    const timing = () => {
+      readout.style.setProperty('--roll', `${reduced.matches ? 0 : ROLL}ms`);
+      readout.style.setProperty('--stagger', `${reduced.matches ? 0 : STAGGER}ms`);
+    };
+
+    const make = (column: Column, entering: boolean): Cell => {
       const el = document.createElement('span');
+      el.style.setProperty('--place', String(column.place));
+      if (column.kind === 'sep') {
+        el.className = 'sep';
+        el.textContent = column.char;
+        if (entering) el.dataset.enter = '';
+        return { el, column, row: 0, leaving: false };
+      }
       el.className = 'col';
+      const sizer = document.createElement('span');
+      sizer.className = 'sizer';
+      sizer.textContent = String(entering ? 0 : column.digit);
       const strip = document.createElement('span');
       strip.className = 'strip';
       for (let i = 0; i < ROWS; i++) {
@@ -81,88 +108,123 @@ const digits = [...String(start)];
         d.textContent = String(i % DIGITS);
         strip.append(d);
       }
-      const sizer = document.createElement('span');
-      sizer.className = 'sizer';
-      sizer.textContent = String(digit);
-      el.append(sizer, strip);
-      const row = digit + DIGITS;
+      const row = entering ? 0 : column.digit;
       strip.style.setProperty('--row', String(row));
-      return { el, strip, row, sizer };
+      el.append(sizer, strip);
+      if (entering) el.dataset.enter = '';
+      return { el, column, strip, sizer, row, leaving: false };
     };
 
-    const render = (prev: number, next: number) => {
-      const digits = String(next);
-      const keys = [...digits].map((_, i) =>
-        rule('place') ? `p${digits.length - 1 - i}` : `i${i}`,
-      );
-      const valueDir: Dir = next < prev ? 'down' : 'up';
-      const seen = new Set<string>();
-      keys.forEach((key, i) => {
-        const digit = Number(digits[i]);
-        let c = cols.get(key);
-        if (!c) {
-          c = column(digit);
-          cols.set(key, c);
-          c.el.classList.add('entering');
-          requestAnimationFrame(() => c?.el.classList.remove('entering'));
-        }
-        seen.add(key);
-        readout.append(c.el);
-        if (digitAt(c.row) === digit) return;
-        const dir = rule('dir') ? valueDir : shortest(digitAt(c.row), digit);
-        const r = rollTo(c.row, digit, dir);
-        if (r.rebase !== null) {
-          c.strip.style.transition = 'none';
-          c.strip.style.setProperty('--row', String(r.rebase));
-          void c.strip.offsetHeight;
-          c.strip.style.transition = '';
-        }
-        c.strip.style.setProperty('--row', String(r.row));
-        c.row = r.row;
-        c.sizer.textContent = String(digit);
-      });
-      for (const [key, c] of cols) {
-        if (seen.has(key)) continue;
-        cols.delete(key);
-        c.el.classList.add('leaving');
-        setTimeout(() => c.el.remove(), 460);
+    const roll = (cell: Cell, digit: number, dir: Dir) => {
+      if (!cell.strip || !cell.sizer || digitAt(cell.row) === digit) return;
+      const own = rule('dir') ? dir : shortest(digitAt(cell.row), digit);
+      const r = rollTo(cell.row, digit, own);
+      if (r.rebase !== null) {
+        cell.strip.style.transition = 'none';
+        cell.strip.style.setProperty('--row', String(r.rebase));
+        void cell.strip.offsetHeight;
+        cell.strip.style.transition = '';
       }
-      said.textContent = String(next);
+      cell.strip.style.setProperty('--row', String(r.row));
+      cell.row = r.row;
+      cell.sizer.textContent = String(digit);
     };
 
-    const set = (next: number) => {
-      const prev = value;
-      value = Math.max(0, Math.min(99999, next));
-      render(prev, value);
-    };
-
-    for (const el of readout.querySelectorAll<HTMLElement>('.col')) {
-      const strip = el.querySelector<HTMLElement>('.strip');
-      const sizer = el.querySelector<HTMLElement>('.sizer');
-      if (!strip || !sizer) continue;
-      cols.set(el.dataset.key ?? '', {
-        el,
-        strip,
-        sizer,
-        row: Number(strip.style.getPropertyValue('--row')),
+    const place = (order: Cell[]) => {
+      order.forEach((cell, i) => {
+        const at = readout.children[i];
+        if (at !== cell.el) readout.insertBefore(cell.el, at ?? null);
       });
-    }
-    fig.classList.toggle('prop', !rule('tab'));
-    said.textContent = String(value);
+    };
+
+    const render = (next: number, dir: Dir, fresh = false) => {
+      const byPlace = rule('place');
+      const columns = columnsOf(next);
+      const seen = new Set<string>();
+      const entered: Cell[] = [];
+      const current = columns.map((column, i) => {
+        const key = byPlace ? `${column.kind}${column.place}` : `${column.kind}${i}`;
+        seen.add(key);
+        let cell = cells.get(key);
+        if (!cell || cell.leaving) {
+          cell?.el.remove();
+          cell = make(column, !fresh);
+          cells.set(key, cell);
+          if (!fresh) entered.push(cell);
+        }
+        cell.column = column;
+        cell.el.style.setProperty('--place', String(column.place));
+        return cell;
+      });
+
+      for (const [key, cell] of cells) {
+        if (seen.has(key) || cell.leaving) continue;
+        if (!byPlace || fresh) {
+          cell.el.remove();
+          cells.delete(key);
+          continue;
+        }
+        cell.leaving = true;
+        cell.el.dataset.leaving = '';
+        roll(cell, 0, dir);
+        const wait = reduced.matches ? 0 : ROLL + STAGGER * cell.column.place;
+        setTimeout(() => {
+          if (cells.get(key) === cell) cells.delete(key);
+          cell.el.remove();
+        }, wait);
+      }
+
+      const leaving = [...cells.values()].filter((c) => c.leaving);
+      place([...current, ...leaving].sort((a, b) => reading(a.column, b.column)));
+
+      if (entered.length) {
+        void readout.offsetWidth;
+        requestAnimationFrame(() => {
+          for (const cell of entered) delete cell.el.dataset.enter;
+        });
+      }
+      current.forEach((cell) => {
+        if (cell.column.kind === 'digit') roll(cell, cell.column.digit, dir);
+      });
+    };
+
+    const show = (by: number, dir: Dir) => {
+      delta.textContent = by === 0 ? ' ' : `${by > 0 ? '+' : '−'}${Math.abs(by).toLocaleString('en-US')}`;
+      if (reduced.matches) return;
+      delta.animate(
+        [{ opacity: 0, transform: `translateY(${dir === 'down' ? -6 : 6}px)` }, { opacity: 1, transform: 'none' }],
+        { duration: 320, easing: 'cubic-bezier(0.16, 1, 0.3, 1)' },
+      );
+    };
+
+    const step = (by: number) => {
+      const next = Math.max(0, value + by);
+      if (next === value) return;
+      const dir: Dir = next < value ? 'down' : 'up';
+      show(next - value, dir);
+      value = next;
+      timing();
+      render(value, dir);
+      said.textContent = value.toLocaleString('en-US');
+    };
+
+    timing();
+    render(value, 'up', true);
 
     for (const b of fig.querySelectorAll<HTMLButtonElement>('[data-step]')) {
-      b.addEventListener('click', () => set(value + Number(b.dataset.step)));
+      b.addEventListener('click', () => step(Number(b.dataset.step)));
     }
     fig.querySelector('[data-jump]')?.addEventListener('click', () => {
-      set(value >= 1000 ? value % 1000 : value + 1000 * (1 + Math.floor(Math.random() * 8)));
+      step(JUMPS[jump % JUMPS.length]);
+      jump += 1;
     });
     for (const box of fig.querySelectorAll<HTMLInputElement>('[data-rule]')) {
       box.addEventListener('change', () => {
-        if (box.dataset.rule === 'tab') fig.classList.toggle('prop', !box.checked);
+        if (box.dataset.rule === 'tab') readout.classList.toggle('fixed', box.checked);
         if (box.dataset.rule === 'place') {
-          for (const c of cols.values()) c.el.remove();
-          cols.clear();
-          render(value, value);
+          for (const c of cells.values()) c.el.remove();
+          cells.clear();
+          render(value, 'up', true);
         }
       });
     }
@@ -170,42 +232,61 @@ const digits = [...String(start)];
 </script>
 
 <style>
-  .view {
+  .lab {
     display: grid;
-    place-items: center;
-    padding: clamp(28px, 7vw, 48px) 12px;
+    place-content: center;
+    justify-items: center;
+    gap: 1.4rem;
+    min-height: clamp(240px, 52vw, 300px);
+    padding: 1.4rem;
+    background: oklch(0.973 0.003 106);
+    color: oklch(0.173 0 0);
+    font-family: var(--font-grotesk);
   }
 
   .readout {
     display: flex;
-    font-family: var(--sans);
+    align-items: flex-start;
+    height: 1em;
+    font-size: clamp(2.6rem, 11vw, 4.2rem);
     font-weight: 600;
-    font-size: clamp(64px, 14vw, 104px);
     line-height: 1;
-    letter-spacing: -0.03em;
-    color: var(--strong);
+    letter-spacing: -0.02em;
+    font-variant-numeric: proportional-nums;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .readout.fixed {
     font-variant-numeric: tabular-nums;
   }
 
-  .prop .readout {
-    font-variant-numeric: proportional-nums;
-  }
-
-  .readout :global(.col) {
+  .readout :global(.col),
+  .readout :global(.sep) {
     position: relative;
     display: block;
     height: 1em;
-    max-width: 1em;
     overflow: hidden;
     transition:
-      opacity 300ms var(--out),
-      max-width 300ms var(--out);
+      max-width var(--roll) cubic-bezier(0.5, 0, 0.2, 1),
+      opacity var(--roll) cubic-bezier(0.5, 0, 0.2, 1);
+    transition-delay: calc(var(--place) * var(--stagger));
   }
 
-  .readout :global(.col.entering),
-  .readout :global(.col.leaving) {
-    opacity: 0;
+  .readout :global(.col) {
+    max-width: 1.5ch;
+  }
+
+  .readout :global(.sep) {
+    max-width: 0.4ch;
+    padding-right: 0.06em;
+    color: oklch(0.53 0.009 106);
+  }
+
+  .readout :global([data-enter]),
+  .readout :global([data-leaving]) {
     max-width: 0;
+    opacity: 0;
   }
 
   .readout :global(.sizer) {
@@ -215,13 +296,11 @@ const digits = [...String(start)];
 
   .readout :global(.strip) {
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    display: flex;
-    flex-direction: column;
+    inset: 0 0 auto;
+    display: block;
     transform: translateY(calc(var(--row) * -1em));
-    transition: transform 460ms var(--out);
+    transition: transform var(--roll) cubic-bezier(0.5, 0, 0.2, 1);
+    transition-delay: calc(var(--place) * var(--stagger));
   }
 
   .readout :global(.strip > span) {
@@ -230,12 +309,59 @@ const digits = [...String(start)];
     text-align: center;
   }
 
-  .keys {
-    gap: 6px;
+  .delta {
+    margin: 0;
+    font-size: 0.78rem;
+    line-height: 1.2;
+    color: oklch(0.53 0.009 106);
+    font-variant-numeric: tabular-nums;
   }
 
-  .keys [data-jump] {
-    margin-left: auto;
+  .keys {
+    display: flex;
+    gap: 8px;
+  }
+
+  .key {
+    position: relative;
+    min-width: 3.1rem;
+    padding: 8px 12px;
+    border: 1px solid oklch(0.2 0.004 106 / 0.08);
+    border-radius: 10px;
+    background: oklch(0.973 0.003 106);
+    color: oklch(0.173 0 0);
+    font: inherit;
+    font-size: 0.82rem;
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    transition:
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 160ms ease;
+  }
+
+  .key::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+  }
+
+  .key.wide {
+    min-width: 4.4rem;
+  }
+
+  .key:active {
+    transform: scale(0.97);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .key:hover {
+      background: color-mix(in oklch, oklch(0.973 0.003 106), oklch(0.173 0 0) 6%);
+    }
   }
 
   .rules {
@@ -262,7 +388,10 @@ const digits = [...String(start)];
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .readout :global(.strip) {
+    .readout :global(.col),
+    .readout :global(.sep),
+    .readout :global(.strip),
+    .key {
       transition: none;
     }
   }
