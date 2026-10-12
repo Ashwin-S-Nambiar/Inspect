@@ -54,18 +54,18 @@ The screens are fixed to the sheet, not to the drawing. When the tide moves, the
 
 ## The things that make it look printed
 
-Take it apart yourself. This is the same press, the same inks, screen maths and paper, printing four simple plates instead of a rock pool.
+Take it apart yourself. This is the lab itself, the same rock pool through the same press, inks, screen maths and paper.
 
-<RisoPress caption="The lab's press, ported to run here. Turn plates down to see what each ink adds, and turn halftone off to see the flat picture it screens." />
+<RisoPress caption="The lab's tide and press, running here. Turn plates down to see what each ink adds, and turn halftone off to see the flat picture it screens." />
 
-- **Plates.** Turn it to 1 and you have yellow alone. Each plate you add only darkens what is under it, the way ink does, so the rectangle where pink and blue overlap goes a deep violet you never drew.
+- **Plates.** Turn it to 1 and you have yellow alone. Each plate you add only darkens what is under it, the way ink does, so the rocks, where pink, green and blue overlap, go a deep violet you never drew.
 - **Misregister.** Each plate slips a fixed direction, a pixel or two. On paper the drum never quite lines up, and a picture that is perfectly registered looks like a screenshot.
 - **Starvation.** Look closely at a flat area and it is blotchy: a noise field thins the ink where the drum ran short, and a few pixels miss entirely.
 - **Density.** Each ink absorbs at most 92% of its colour, so even three inks stacked never reach flat black. The darkest thing on the page is still ink on paper.
 - **Paper.** The stock is warm off-white with a cloudy grain and a few flecks, drawn once.
 
 <Aside label="No filter">
-  None of this is a CSS filter or a shader. It is plain JavaScript over the pixels of a canvas, and the full lab runs the press in a web worker so the page stays responsive.
+  None of this is a CSS filter or a shader. It is plain JavaScript over the pixels of a canvas, and the press runs in a web worker, here as in the lab, so the page stays responsive.
 </Aside>
 
 ## On twos
