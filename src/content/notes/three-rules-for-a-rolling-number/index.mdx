@@ -27,7 +27,7 @@ A rolling number is one of those details that is everywhere now: a count ticks u
 
 Here it is with all three rules on. Press the buttons, then switch a rule off and do the same thing again.
 
-<Odometer start={1299} caption="A copy of the lab's roll, written from the same source. Start at 1299 and press +1 to cross a carry." />
+<Odometer start={1298} caption="A copy of the lab's roll, written from the same source. Press +1 twice to cross a carry." />
 
 ## How a column rolls
 
@@ -39,13 +39,13 @@ Two copies means a digit can always roll either way without running off the end.
 
 The obvious rule is that each column takes its shortest way round to its new digit. Try 1305 going down to 1297. The hundreds go 3 to 2, back one. The tens go 0 to 9, back one. The ones go 5 to 7, and the shortest way there is forward two. So in a number that just went down, one column rolls up. It is a split second, and it looks like a glitch every time.
 
-The fix is to stop asking each column. If the whole number went up, every column rolls up, and if it went down, every column rolls down. The ones going from 5 back to 7 now takes eight steps instead of two, but nothing ever rolls against the number. Switch "rolls the way the value moved" off in the demo, press −1 on 1300 a few times and then −900, and watch for a column going the wrong way.
+The fix is to stop asking each column. If the whole number went up, every column rolls up, and if it went down, every column rolls down. The ones going from 5 back to 7 now takes eight steps instead of two, but nothing ever rolls against the number. Switch "rolls the way the value moved" off in the demo and press jump until 9,298 drops to 1,298: the thousands take the short way from 9 to 1, upwards, while the number falls.
 
 ## Rule two: a column is a place, not a position
 
 When 1234 loses its thousands and becomes 234, the natural thing is to render the digits as a list and let the framework match them by index. Index 0 was the 1, now it is the 2. Index 1 was the 2, now it is the 3. Every column rolls, and the 2, 3 and 4 that never changed spin to show digits that were already on screen one place over.
 
-The fix is to key columns by their place value: ones, tens, hundreds, thousands. The ones column is the ones column whatever the length of the number, so dropping the thousands removes one column, and the three that stayed do not move at all. Switch "keyed by place" off in the demo and press "Jump a place" to see every survivor roll for no reason.
+The fix is to key columns by their place value: ones, tens, hundreds, thousands. The ones column is the ones column whatever the length of the number, so dropping the thousands removes one column, and the three that stayed do not move at all. Switch "keyed by place" off in the demo and press jump to see every survivor roll for no reason.
 
 <Aside label="Leaving gracefully">
   A place that is dropped does not just vanish. It fades and closes its width while the others stay put, so the number shortens instead of snapping. That was its own bug: unmounting it mid frame made the rest jump.
