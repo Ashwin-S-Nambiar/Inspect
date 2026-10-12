@@ -2,6 +2,8 @@
 import type { ImageMetadata } from 'astro';
 import { Picture } from 'astro:assets';
 
+const TALL = 440;
+
 interface Mark {
   x: number;
   y: number;
@@ -15,15 +17,21 @@ interface Props {
   alt: string;
   marks: Mark[];
   caption?: string;
-  narrow?: boolean;
+  mat?: string;
 }
 
-const { src, alt, marks, caption, narrow = false } = Astro.props;
+const { src, alt, marks, caption, mat } = Astro.props;
 const pad = (i: number) => String(i + 1).padStart(2, '0');
-const wide = !narrow && src.width / src.height > 1.2;
+const ratio = src.width / src.height;
+const wide = ratio > 1.2;
+const tall = ratio < 1;
+const fit = tall ? Math.round(TALL * ratio) : 0;
 ---
 
-<figure class:list={['fig', 'annotated', { narrow, wide }]} data-annotated data-marks={JSON.stringify(marks.map(({ x, y, w, h }) => [x, y, w ?? 0, h ?? 0]))}>
+<figure
+  class:list={['fig', 'annotated', { wide, tall, matted: Boolean(mat) }]}
+  style={{ '--mat': mat, '--fit': fit ? `${fit}px` : undefined }}
+  data-annotated data-marks={JSON.stringify(marks.map(({ x, y, w, h }) => [x, y, w ?? 0, h ?? 0]))}>
   <div class="stage">
     <div class="stage-in">
       <div class="pan">
@@ -34,7 +42,7 @@ const wide = !narrow && src.width / src.height > 1.2;
             formats={['avif', 'webp']}
             fallbackFormat="webp"
             widths={[640, 960, 1280]}
-            sizes={narrow ? '440px' : '(max-width: 660px) 760px, 620px'}
+            sizes={tall ? `${fit}px` : '(max-width: 660px) 760px, 620px'}
           />
           {marks.map((m, i) =>
             m.w && m.h ? (
@@ -114,7 +122,7 @@ const wide = !narrow && src.width / src.height > 1.2;
 
     let moved = false;
     const edges = () => {
-      const max = pan.scrollWidth - pan.clientWidth;
+      const max = shot.offsetWidth - pan.clientWidth;
       const at = pan.scrollLeft;
       if (at > 4) moved = true;
       pan.dataset.edge = max <= 1 ? '' : at <= 1 ? 'end' : at >= max - 1 ? 'start' : 'both';
@@ -125,7 +133,7 @@ const wide = !narrow && src.width / src.height > 1.2;
     edges();
 
     const reveal = (i: number) => {
-      if (i < 0 || pan.scrollWidth <= pan.clientWidth) return;
+      if (i < 0 || shot.offsetWidth <= pan.clientWidth) return;
       const [x, , w] = marks[i];
       const left = ((x + w / 2) / 100) * shot.clientWidth - pan.clientWidth / 2;
       pan.scrollTo({ left, behavior: reduced.matches ? 'auto' : 'smooth' });
@@ -166,16 +174,37 @@ const wide = !narrow && src.width / src.height > 1.2;
 </script>
 
 <style>
-  .narrow .stage,
-  .narrow .notes {
-    max-width: 440px;
-    margin-inline: auto;
-  }
-
   .pan {
-    overflow-x: auto;
+    overflow: hidden;
     overscroll-behavior-x: contain;
     scrollbar-width: none;
+  }
+
+  .tall .stage-in {
+    display: grid;
+    justify-items: center;
+    padding: clamp(16px, 5vw, 28px);
+    background: var(--stage);
+  }
+
+  .tall .pan {
+    width: min(100%, var(--fit));
+  }
+
+  .tall .shot :global(img) {
+    border-radius: 8px;
+    box-shadow:
+      0 0 0 1px var(--card-line),
+      0 6px 20px rgb(20 20 19 / 0.08);
+  }
+
+  .matted .stage-in {
+    background: var(--mat);
+  }
+
+  .matted .shot :global(img) {
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .pan::-webkit-scrollbar {
@@ -221,6 +250,10 @@ const wide = !narrow && src.width / src.height > 1.2;
   }
 
   @media (max-width: 640px) {
+    .wide .pan {
+      overflow-x: auto;
+    }
+
     .wide .shot {
       width: 760px;
     }

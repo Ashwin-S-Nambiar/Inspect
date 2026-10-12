@@ -20,10 +20,9 @@ interface Props {
   cues?: Cue[];
   track?: readonly unknown[];
   caption?: string;
-  narrow?: boolean;
 }
 
-const { src, poster, label, length, cues = [], track, caption, narrow = false } = Astro.props;
+const { src, poster, label, length, cues = [], track, caption } = Astro.props;
 const still = await getImage({ src: poster, format: 'webp', width: Math.min(poster.width, 1440) });
 const clock = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toFixed(1).padStart(4, '0')}`;
 const at = (s: number) => Math.min(100, (s / length) * 100);
@@ -34,7 +33,7 @@ const data = cues.map((c) => ({
 }));
 ---
 
-<figure class:list={['fig', 'clip', { narrow }]} data-clip data-length={length} data-w={poster.width} data-h={poster.height}>
+<figure class:list={['fig', 'clip']} data-clip data-length={length} data-w={poster.width} data-h={poster.height}>
   <div class="stage">
     <div class="stage-in">
       <div class="media inspect" style={{ aspectRatio: `${poster.width} / ${poster.height}` }}>
@@ -281,12 +280,6 @@ const data = cues.map((c) => ({
 </script>
 
 <style>
-  .narrow .stage,
-  .narrow .notes {
-    max-width: 440px;
-    margin-inline: auto;
-  }
-
   .media .box,
   .media .pin {
     left: 0;
