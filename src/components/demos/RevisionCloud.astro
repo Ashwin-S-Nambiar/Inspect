@@ -1,4 +1,5 @@
 ---
+import { Font } from 'astro:assets';
 import cloud from '../../assets/demos/redline-cloud.svg?url';
 
 interface Props {
@@ -7,6 +8,10 @@ interface Props {
 
 const { caption } = Astro.props;
 ---
+
+<Font cssVariable="--font-atkinson" />
+<Font cssVariable="--font-azeret" />
+<Font cssVariable="--font-osifont" />
 
 <figure class="fig rc" data-rc style={{ '--cloud': `url("${cloud}")` }}>
   <div class="stage">
@@ -99,7 +104,7 @@ const { caption } = Astro.props;
     padding: 22px 22px 22px 18px;
     background: #e7eae3;
     color: #23272a;
-    font-family: system-ui, sans-serif;
+    font-family: var(--font-atkinson);
     box-shadow:
       inset 0 1px 0 rgb(35 39 42 / 0.28),
       inset 0 -1px 0 rgb(35 39 42 / 0.28);
@@ -158,7 +163,7 @@ const { caption } = Astro.props;
     height: 30px;
     border-radius: 50%;
     box-shadow: inset 0 0 0 1.5px #23272a;
-    font-size: 14px;
+    font: 400 13px var(--font-osifont);
   }
 
   .desc {
@@ -173,7 +178,7 @@ const { caption } = Astro.props;
   }
 
   .proj b {
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-azeret);
     font-weight: 600;
     color: #23272a;
   }
@@ -198,7 +203,7 @@ const { caption } = Astro.props;
   }
 
   .date {
-    font-family: ui-monospace, monospace;
+    font-family: var(--font-azeret);
     font-size: 13px;
     font-weight: 600;
     white-space: nowrap;
