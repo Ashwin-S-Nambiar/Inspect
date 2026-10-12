@@ -15,7 +15,7 @@ project:
 thumb: ./thumb.png
 hero:
   image: ./hero.webp
-  alt: "The v3 portfolio on a desktop: a paragraph about me on the left with highlighted links to projects, labs, x and github, ending in the song I last listened to and the show I last watched, and a reel of project cards curving down the right side"
+  alt: "The v3 portfolio on a desktop: a paragraph about me on the left with highlighted links to my résumé, projects, labs, x and github, ending in the song I last listened to and the show I last watched, and a reel of project cards curving down the right side"
 ---
 
 import Annotated from '../../../components/Annotated.astro';
@@ -29,7 +29,7 @@ import reelPoster from './reel.jpg';
 import reel from './reel.mp4';
 import slow from './slow.webp';
 
-<Project /> is the third version of my portfolio, at ashwin.co.in. It took that address over from v2 on 7 October 2026, and v2 stays up at v2.ashwin.co.in. The home page is one paragraph about me, ending with what I last listened to and watched, and a reel of things I built, each card playing a recording of the real app. Projects and labs have their own pages, and every project gets an essay with figures.
+<Project /> is the third version of my portfolio, at ashwin.co.in. It took that address over from v2 on 7 October 2026, and v2 stays up at v2.ashwin.co.in. The home page is one paragraph about me, ending with what I last listened to and watched, and a reel of things I built, each card playing a recording of the real app. Projects and labs have their own pages, every project gets an essay with figures, and the résumé hangs off the words "two years". A sentence saying "more in my résumé" cost the paragraph an extra line at 1440 and 769 px wide; a link on words that were already there costs none.
 
 I started it on 25 August 2026, in React, TypeScript and Vite, and kept one rule from the start: no animation library. Every moving thing is a short function I can read, which is what this write-up is about.
 
@@ -104,24 +104,34 @@ for (const group of groups) {
 
 The sentence names one artist or two, and past that "pritam and 2 others", put together with `Intl.ListFormat`. A chip is about 15 characters wide; a longer title fades out at the edge, and on hover it slides by exactly the part that's hidden.
 
-I tried a larger pair of floating cards, then settled on a compact cover beside a column of text. The cover keeps its full shape, and a peach or blue rule connects the details to the highlighted title. The preview opens inside the paragraph's flow, so the surrounding lines move with it. The song slides down from the top of its space; the show rises from the bottom. There is no tilt or transparent fade over the text behind it.
+I tried a larger pair of floating cards, then settled on a compact cover beside a column of text. The cover keeps its full shape, and a peach or blue rule connects the details to the highlighted title. The preview opens right under its own line, and the lines below move down to make room. I tried a card floating over the text again in October and went back to this one; it has more personality.
+
+The paragraph sits in the middle of its column, so anything that grows inside it pushes the text above it up as well. Opening a preview used to lift the whole introduction by half the preview's height. Now the closing line takes a negative bottom margin as tall as the preview, so the paragraph's height doesn't change and nothing above the preview moves. On a short window that would push the closing line off the bottom, so the margin only takes the room that's there:
+
+```ts
+const room = (host.parentElement?.clientHeight ?? 0) - (host.offsetHeight - reveals - margin);
+host.style.setProperty("--now-h", `${active ? tallest : 0}px`);
+host.style.setProperty("--now-m", `${active ? Math.max(0, Math.min(tallest, room - tallest)) : 0}px`);
+```
+
+Both previews open to the taller card's height, so going from the song to the show leaves the closing line where it is.
 
 The first version could open twice when I approached a highlight from below. Expanding the paragraph moved the trigger away from the pointer, which closed it, then put it back under the pointer. Now only a physical pointer crossing starts a preview. While it is open, the hit area joins the highlight's original position, its current position and the visible card. That keeps the card reachable while the layout moves.
 
-There is a 90 ms pause before opening and a 200 ms grace period before closing. When I move straight to the other highlight, the outgoing preview stays open while the next one picks up the hover, then the two heights transition together. Hovering the plain sentence never starts it.
+There is a 90 ms pause before opening, 50 ms when the other preview is already open, and a 200 ms grace period before closing, with 14 px of slack around the highlight and the card so drifting off an edge doesn't close it. Moving straight to the other highlight swaps the cards: the old one blurs out while the new one fades in over it, with no movement, the same in both directions. Slowed to a tenth, the first version of that swap had a frame with nothing in it, because the old card was gone before the new one started. Hovering the plain sentence never starts it.
 
 <Annotated
   src={listening}
-  alt="The listening and watching lines with Asur expanded inline: its full poster beside the title, Ashes from the past, S1 E4, a relative watched time and an IMDb rating of 8.4 out of 10"
+  alt="The listening and watching lines with Supernatural expanded under its line: its full poster beside the title, Pac-Man Fever, S8 E20, a relative watched time and an IMDb rating of 8.4 out of 10"
   caption="The compact Simkl preview, captured from the local build at 2x."
   marks={[
-    { x: 28.5, y: 23.5, w: 13.7, h: 16, note: 'Only the highlighted title starts the preview; the surrounding sentence does not' },
-    { x: 17.1, y: 55.6, w: 46.4, h: 17, note: 'The full title and episode sit beside uncropped artwork; the whole preview is a link' },
-    { x: 17.1, y: 76, w: 46.4, h: 6.2, note: 'Season, episode, watched time and rating stay together in the metadata row' },
+    { x: 28.5, y: 21.3, w: 30.1, h: 16.2, note: 'Only the highlighted title starts the preview; the surrounding sentence does not' },
+    { x: 17.1, y: 44.5, w: 46.4, h: 28.5, note: 'The full title and episode sit beside uncropped artwork; the whole preview is a link' },
+    { x: 17.1, y: 74.4, w: 46.4, h: 6.3, note: 'Season, episode, watched time and rating stay together in the metadata row' },
   ]}
 />
 
-The sentence already says "last listened" or "last watched", so the preview does not repeat it. A playing track gets "now playing"; a past one gets its relative time when Spotify supplies it. The show keeps its episode title, watched time and rating, and shows an episode total only for entries numbered without seasons. Clicking the preview opens the same resource as its highlight. Tab moves from the highlight into the card, and Escape closes it and returns focus.
+The sentence already says "last listened" or "last watched", so the preview does not repeat it. A playing track gets "now playing"; a past one gets its relative time when Spotify supplies it. The show keeps its episode title, watched time and rating, and shows an episode total only for entries numbered without seasons. Clicking the preview opens the same resource as its highlight. Keyboard focus on a highlight opens its preview and Escape closes it; the highlight carries the full label, so the card stays out of the tab order.
 
 Simkl's history only keeps an anime's original title, so Bleach arrives as "Bleach: Sennen Kessen Hen - Kashin Tan". simkl-api looks up the English one, takes off the "season 17" Simkl adds to it, and splits what's left into show, subtitle and arc. Simkl lists a split season as its own entry, which is where "The Calamity" comes from. One Piece uses one continuing entry, so its episode title carries the story instead of an arc label.
 
