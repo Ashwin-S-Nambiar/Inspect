@@ -619,8 +619,8 @@ em {
 
 .pin {
   position: absolute;
-  left: calc(var(--x) * 1%);
-  top: calc(var(--y) * 1%);
+  left: clamp(14px, calc(var(--x) * 1%), calc(100% - 14px));
+  top: clamp(14px, calc(var(--y) * 1%), calc(100% - 14px));
   width: 22px;
   height: 22px;
   margin: -11px 0 0 -11px;
