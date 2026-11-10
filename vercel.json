@@ -1,4 +1,6 @@
 {
+  "installCommand": "env -u NPM_CONFIG_CACHE_DIR -u npm_config_cache_dir npm install",
+  "buildCommand": "env -u NPM_CONFIG_CACHE_DIR -u npm_config_cache_dir npm run build",
   "headers": [
     {
       "source": "/(.*)",
