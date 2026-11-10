@@ -54,7 +54,7 @@ going back restores the list's scroll in `pagereveal`, before the first frame, s
 ## the design
 
 - **quiet on purpose.** a near white page (`#fbfbfa`), grey text, and one blue (`#0a74e8`) for everything that points. dark mode follows your system, with no switch.
-- **type.** [inter](https://rsms.me/inter/) for everything, [newsreader](https://fonts.google.com/specimen/Newsreader) italic for the odd word in *italics*, and [geist mono](https://vercel.com/font) for dates, times and sizes.
+- **type.** [inter](https://rsms.me/inter/) for everything, [newsreader](https://fonts.google.com/specimen/Newsreader) italic for the odd word in _italics_, and [geist mono](https://vercel.com/font) for dates, times and sizes.
 - **one column.** 620 px of text with figures the same width, and the contents in the left margin on wide screens. the contents follow your scroll and mark the last section once you reach the end. on phones and tablets, a thin bar slides in at the top once the title scrolls away, showing the section you're in and how far through you are. tap it for the contents: a sheet on a phone that you can drag or flick shut, a dropdown on a tablet. the back button closes it. it sits at the top because safari's own bar has the bottom.
 - **nothing jumps.** fonts are self-hosted, split by unicode range and preloaded with metric matched fallbacks, heroes and figures have their size before they load, and the first visit fades in once the fonts are ready. layout shift measures 0 on load, while scrolling and while using every figure, on 7 sizes from a 320 px phone to a 2560 px monitor, light and dark, with nothing wider than the screen.
 
@@ -64,16 +64,16 @@ going back restores the list's scroll in `pagereveal`, before the first frame, s
 
 ## the stack
 
-| layer | choices |
-| --- | --- |
-| site | [astro 7](https://astro.build) with [mdx](https://mdxjs.com), fully static |
-| content | one content collection over `projects/` and `notes/`, one folder per post, typed front matter |
-| images | `astro:assets`, as avif and webp at three widths |
-| fonts | the astro fonts api, self-hosted, with generated fallbacks |
-| motion | css, the web animations api, cross document view transitions |
-| feeds | [@astrojs/rss](https://docs.astro.build/en/recipes/rss/) and [@astrojs/sitemap](https://docs.astro.build/en/guides/integrations-guide/sitemap/) |
-| lint and format | [biome](https://biomejs.dev), with a pre-commit hook |
-| hosting | [vercel](https://vercel.com/), as static files, with 301s from the old `/posts/*` urls to `/notes/*` |
+| layer           | choices                                                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| site            | [astro 7](https://astro.build) with [mdx](https://mdxjs.com), fully static                                                                      |
+| content         | one content collection over `projects/` and `notes/`, one folder per post, typed front matter                                                   |
+| images          | `astro:assets`, as avif and webp at three widths                                                                                                |
+| fonts           | the astro fonts api, self-hosted, with generated fallbacks                                                                                      |
+| motion          | css, the web animations api, cross document view transitions                                                                                    |
+| feeds           | [@astrojs/rss](https://docs.astro.build/en/recipes/rss/) and [@astrojs/sitemap](https://docs.astro.build/en/guides/integrations-guide/sitemap/) |
+| lint and format | [biome](https://biomejs.dev), with a pre-commit hook                                                                                            |
+| hosting         | [vercel](https://vercel.com/), as static files, with 301s from the old `/posts/*` urls to `/notes/*`                                            |
 
 ## running it
 
@@ -99,11 +99,11 @@ a write-up is a folder in [`src/content/projects`](src/content/projects), a note
 title: Tenzies
 dek: One line under the title, also used for feeds and link previews.
 date: 2026-09-28T13:10:00+05:30
-kind: project              # project, build log, deep dive or note
-tags: [tenzies, three-js]  # a note's first tag is its project's folder name
-draft: false               # drafts show in dev only
+kind: project # project, build log, deep dive or note
+tags: [tenzies, three-js] # a note's first tag is its project's folder name
+draft: false # drafts show in dev only
 project:
-  name: Tenzies            # the same name on the write-up and its notes
+  name: Tenzies # the same name on the write-up and its notes
   icon: ../../../assets/projects/tenzies.svg
   about: One line about the project.
   made: 2024, rebuilt in 2026
@@ -111,10 +111,10 @@ project:
   repo: https://github.com/Ashwin-S-Nambiar/Tenzies
   stack: [React 19, three.js]
 hero:
-  image: ./win.webp        # the still, or the clip's first frame
-  video: ./hero.mp4        # optional, a short muted loop
+  image: ./win.webp # the still, or the clip's first frame
+  video: ./hero.mp4 # optional, a short muted loop
   alt: what the hero shows
-thumb: ./thumb.png         # optional, the list thumbnail if not the hero
+thumb: ./thumb.png # optional, the list thumbnail if not the hero
 ---
 ```
 
