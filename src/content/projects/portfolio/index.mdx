@@ -190,6 +190,19 @@ Media that arrives within 380 ms, or comes from the cache, or lands off screen, 
 
 That last part had a bug during the rebuild. While a phone clip loads, its screen is allowed to spill past its rounded corners so the blur can bleed out softly. That was switched back off only when a clip ended up "ready", and a clip that landed late, while you were watching, ended up "slow" instead. So on a slow connection the screen never got its corners back, and the red of a film poster showed as a thin line down the edge of the phone. The spill now only applies while loading or after an error.
 
+## A name that breaks in the right place
+
+Each employer in the paragraph is a link with its logo, and the link used to be one unbreakable unit. That was fine for "microdose". When the current job became Thoughtful Engineering, the logo plus "thoughtful engineering" was too long to move as a block, and between 1200 and 1440 px it left lines visibly short. Now only the logo and the first word are glued together, so a name can wrap after its first word and the logo never sits alone at a line's end:
+
+```tsx
+const [lead, ...rest] = company.name.split(" ");
+// …
+<span className="brand-lead"><BrandMark mark={company.mark} />{lead}</span>
+{rest.length > 0 && ` ${rest.join(" ")}`}
+```
+
+The paragraph also stopped capping at 30 px. On the reel layout it grows with the window up to 46 px, limited by height as well as width, and its column ends at 36em, so a 2560 px screen gets a paragraph sized for it rather than a small block in a lot of dark.
+
 ## Rough edges
 
 - **The recordings stay light.** The site follows your system into dark mode, but the clips were recorded in light mode, so they glow on a dark page.
