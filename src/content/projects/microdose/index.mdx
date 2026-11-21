@@ -1,0 +1,58 @@
+---
+title: Microdose
+dek: "The frontend of an AI creative studio, where the model does the impressive part. The work around it: flows that refuse a wire that can't work, and an assistant whose runs outlive a dropped connection."
+date: 2026-11-22T12:30:00+05:30
+kind: project
+tags: [microdose, react]
+project:
+  name: Microdose
+  icon: ../../../assets/projects/microdose.svg
+  about: "The frontend of an AI creative studio: stories, canvases and flows, on web, Mac and iPhone."
+  made: 2026, at Thoughtful Engineering
+  live: https://studio.microdose.fun
+  stack: [React 19, TypeScript, Tailwind CSS 4, Zustand, React Flow, Motion, Tauri, SwiftUI]
+thumb: ./thumb.png
+hero:
+  image: ./hero.webp
+  alt: "Microdose Studio's home on a desktop: Micro above the question What do you want to make?, a prompt box with shortcuts for a comic, an anime episode, a visual novel, a canvas and a flow, and recent work below"
+---
+
+<Project /> is an AI creative studio. Creators write a premise, cast their characters once and build a comic, a series or a video page by page, with Micro, the assistant, handing bigger jobs to a team of agents. [Thoughtful Engineering](https://thoughtful.site) builds it for North Bay Ventures, and I've had the frontend since January 2026: the landing, the dashboard, the story, canvas, flow and video editors, a Mac app on Tauri and a SwiftUI iPhone app.
+
+The models make the pictures. Most of my work is everything around a generation: where you are, what is running, what it cost, and what happens when a model or the network has a bad moment. Two parts of that are worth writing down.
+
+## Wires that know what they carry
+
+A flow is a graph of model calls on React Flow: a prompt into an image, that image into a video. Every port knows what it carries, `text`, `image`, `video`, `audio` or `any`, and every input knows what it accepts. React Flow asks before it draws a wire, and the answer is two checks:
+
+```ts
+const canConnect = useCallback(
+  (connection: Connection | Edge): boolean => {
+    const source = nodesRef.current.find((n) => n.id === connection.source);
+    const target = nodesRef.current.find((n) => n.id === connection.target);
+    if (!source || !target) return false;
+    if (createsCycle(connection.source, connection.target, edgesRef.current)) {
+      return false;
+    }
+    return mediaCompatible(
+      carriedBy(source),
+      acceptsAt(target, connection.targetHandle ?? ""),
+    );
+  },
+  [carriedBy, acceptsAt],
+);
+```
+
+`createsCycle` walks downstream from the target and refuses the wire if it reaches the source, because a flow that feeds itself never finishes. `mediaCompatible` lets `any` through and otherwise needs the input to accept the medium. Dropping a wire on empty canvas opens the node palette, and the node you pick takes the wire's medium, so it arrives already connected the right way.
+
+## A run that outlives the connection
+
+Micro's runs stream their events, and a long one can outlast a train tunnel. When the stream drops, the agent reconnects and asks for events after the last one it saw, so nothing repeats and nothing is lost. If the browser is offline or the tab is hidden, it waits for the network instead of burning retries. Otherwise it backs off a second longer each time, and gives up after five failures in a row.
+
+The team behind Micro is polled rather than streamed: every 4 seconds while it is working, every 10 when idle, and not at all in a hidden tab. If a poll finds a run still active on the server and nothing running here, after a reload or a crash, Micro picks it back up.
+
+## Rough edges
+
+- **Media kinds, not sizes.** A wire checks text, image, video or audio, not resolution or aspect, so a portrait image can still feed a model that wants landscape.
+- **Polled, not pushed.** The team's progress can lag by up to the poll interval.
+- **Closed source.** The studio isn't public, so this write-up quotes the code instead of linking it.

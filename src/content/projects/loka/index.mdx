@@ -1,0 +1,74 @@
+---
+title: Loka
+dek: "The public side of a workspace where AI coding agents live in a pixel town: a landing that reloads without a flash, a waitlist that never moves the page, docs that don't ship the docs, and one design system for every window inside."
+date: 2026-11-22T12:00:00+05:30
+kind: project
+tags: [loka, react]
+project:
+  name: Loka
+  icon: ../../../assets/projects/loka.svg
+  about: "The landing, sign-in and docs for a workspace where AI agents work as a team."
+  made: 2026, at Thoughtful Engineering
+  live: https://loka.ygpt.dev
+  repo: https://github.com/Warlord-K/world
+  stack: [Next.js 16, React 19, Tailwind CSS 3, Framer Motion]
+thumb: ./thumb.png
+hero:
+  image: ./hero.webp
+  alt: "Loka's landing on a desktop: Stop chatting with agents. Start working with them, above a live pixel town of shops and a clock tower under a blue sky"
+---
+
+import DeviceSwitch from '../../../components/DeviceSwitch.astro';
+import desktop from './desktop.webp';
+import phone from './phone.webp';
+
+<Project /> is [Thoughtful Engineering](https://thoughtful.site)'s workspace for teams of AI coding agents. Each agent lives in a pixel town, keeps one long conversation, takes quests and opens the pull requests. The app and the server were already there when I joined, so my part was the way in: the landing, the sign-in pages, the docs and the 404. Inside the town I did a pass rather than a rebuild.
+
+All of it went out in November 2026, on top of an upgrade to Next.js 16 and React 19.3 that came first.
+
+The sign-in pages are their own layout at each size: a sheet over a short band of town on a phone, and two columns from desktop up.
+
+<DeviceSwitch
+  ground="#FFFFFF"
+  views={[
+    { label: 'iPhone', kind: 'phone', src: phone, alt: 'Loka sign-in on an iPhone: a band of the pixel town with Priya saying hello, and the sign-in form in a sheet below it' },
+    { label: 'Desktop', kind: 'desktop', src: desktop, alt: 'Loka sign-in on a desktop: the pixel town under a blue sky on the left, the welcome back form on the right' },
+  ]}
+  caption="Signing in under the landing's sky."
+/>
+
+## Reloading halfway down
+
+The landing is long, and the first version had a bad reload: refresh partway down and the hero painted while the HTML streamed in, then the page jumped to where you were. The clouds shifted too, and the navbar faded a shadow in as you scrolled.
+
+The first fix kept the scroll position per tab and held the body back until enough of the page had arrived to restore it in one frame. A day later the landing became prerendered and cached, each scene renders finished on the server and only starts playing once it scrolls into view, and stills sit under the live canvases so nothing pops in. The clouds are static now and the navbar keeps one border.
+
+## A waitlist that never moves the page
+
+Pro is a waitlist, and the form opens inside the Free and Pro card. The features list and the form share one grid cell, so the card never changes height and the section below never moves. The outgoing panel leaves in 150 ms, the incoming one starts 90 ms later and takes 350 ms, the same both ways. Not now or Esc closes it.
+
+Reloading with the form open used to flash it shut and open again. A tiny script in the head sets the open state before the first paint:
+
+```js
+(function(){try{var h=location.hash;
+  if(h==="#waitlist"||h==="#pro"||sessionStorage.getItem(KEY)==="open")
+    document.documentElement.dataset.waitlist="open"}catch(e){}})();
+```
+
+## Docs that don't ship the docs
+
+The docs share the landing's look, with search on Cmd K, an On this page list that follows you and a sidebar that hides on Cmd \\. The sidebar's state is a cookie the server reads, so a hidden sidebar renders hidden. An inline script would have been the usual fix, but React refuses to run one when the docs open from the landing page.
+
+The first visit was slow because the nav, menu and search bundled every page and the changelog. Now they take an outline built on the server, the full-text index loads only when you search, and the pages are static. Every page shares one Pixelify font, so the docs stopped waiting on a stylesheet of their own.
+
+## One kit for every window
+
+Inside, every window was styled on its own. The pass put buttons, tabs, pills, modals and titles into shared primitives, a text scale into Tailwind, and one motion file so every window, modal and popover opens and closes the same way, reduced motion included. Menus, sidebars and the command palette share one highlight that glides between items, and the HUD fades pieces out instead of unmounting them, so windows open without a flicker. Agents got pixel portraits instead of emoji.
+
+A later pass made buttons, loading and empty states consistent across the app and revamped the admin panel.
+
+## Rough edges
+
+- **Phones get a gate.** The town itself is a desktop app; on a phone /world points you to the app instead.
+- **The landing is heavy.** The live town and the step inside tour make for a large page, which is why reloads needed the work above.
+- **Open Loka is a full page load.** It skips client navigation because /world needs its own cross-origin headers.

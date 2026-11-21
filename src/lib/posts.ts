@@ -86,6 +86,8 @@ const tagNames: Record<string, string> = {
   pasteup: 'Pasteup',
   quizzme: 'QuizzMe',
   chit: 'Chit',
+  loka: 'Loka',
+  microdose: 'Microdose',
   portfolio: 'Portfolio',
   spotify: 'Spotify',
   simkl: 'Simkl',
