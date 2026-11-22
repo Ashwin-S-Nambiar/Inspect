@@ -18,8 +18,10 @@ hero:
   alt: "Loka's landing on a desktop: Stop chatting with agents. Start working with them, above a live pixel town of shops and a clock tower under a blue sky"
 ---
 
+import Annotated from '../../../components/Annotated.astro';
 import DeviceSwitch from '../../../components/DeviceSwitch.astro';
 import desktop from './desktop.webp';
+import ios from './ios.webp';
 import phone from './phone.webp';
 
 <Project /> is [Thoughtful Engineering](https://thoughtful.site)'s workspace for teams of AI coding agents. Each agent lives in a pixel town, keeps one long conversation, takes quests and opens the pull requests. The app and the server were already there when I joined, so my part was the way in: the landing, the sign-in pages, the docs and the 404. Inside the town I did a pass rather than a rebuild, and the iPhone and Mac apps got one too.
@@ -68,6 +70,16 @@ Inside, every window was styled on its own. The pass put buttons, tabs, pills, m
 A later pass made buttons, loading and empty states consistent across the app and revamped the admin panel.
 
 The SwiftUI app for iPhone and iPad got the same portraits and a calmer indigo accent, with Liquid Glass buttons and menus, long-press previews, zoom transitions and split views on iPad. The Mac app, a Tauri shell around the web build, got Settings on Cmd , and a Help menu that opens the docs, and its offline screen now matches the loading screen.
+
+<Annotated
+  src={ios}
+  alt="Loka's iPhone app on three phones: the agents list with pixel portraits, Bramble's chat with three draft review comments and a Send all button, and the reports tab"
+  caption="The iPhone app against the local demo town."
+  marks={[
+    { x: 10.2, y: 24.4, w: 3.3, h: 5, note: 'The same pixel portrait each agent has in the town, drawn in SwiftUI' },
+    { x: 9, y: 11.8, w: 6.9, h: 5, note: 'Buttons and menus in Liquid Glass' },
+  ]}
+/>
 
 ## Rough edges
 
