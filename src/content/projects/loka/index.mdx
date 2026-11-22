@@ -7,11 +7,11 @@ tags: [loka, react]
 project:
   name: Loka
   icon: ../../../assets/projects/loka.svg
-  about: "The landing, sign-in and docs for a workspace where AI agents work as a team."
+  about: "The landing, sign-in, docs and iPhone app for a workspace where AI agents work as a team."
   made: 2026, at Thoughtful Engineering
   live: https://loka.ygpt.dev
   repo: https://github.com/Warlord-K/world
-  stack: [Next.js 16, React 19, Tailwind CSS 3, Framer Motion]
+  stack: [Next.js 16, React 19, Tailwind CSS 3, Framer Motion, SwiftUI]
 thumb: ./thumb.png
 hero:
   image: ./hero.webp
@@ -22,7 +22,7 @@ import DeviceSwitch from '../../../components/DeviceSwitch.astro';
 import desktop from './desktop.webp';
 import phone from './phone.webp';
 
-<Project /> is [Thoughtful Engineering](https://thoughtful.site)'s workspace for teams of AI coding agents. Each agent lives in a pixel town, keeps one long conversation, takes quests and opens the pull requests. The app and the server were already there when I joined, so my part was the way in: the landing, the sign-in pages, the docs and the 404. Inside the town I did a pass rather than a rebuild.
+<Project /> is [Thoughtful Engineering](https://thoughtful.site)'s workspace for teams of AI coding agents. Each agent lives in a pixel town, keeps one long conversation, takes quests and opens the pull requests. The app and the server were already there when I joined, so my part was the way in: the landing, the sign-in pages, the docs and the 404. Inside the town I did a pass rather than a rebuild, and the iPhone and Mac apps got one too.
 
 All of it went out in November 2026, on top of an upgrade to Next.js 16 and React 19.3 that came first.
 
@@ -66,6 +66,8 @@ The first visit was slow because the nav, menu and search bundled every page and
 Inside, every window was styled on its own. The pass put buttons, tabs, pills, modals and titles into shared primitives, a text scale into Tailwind, and one motion file so every window, modal and popover opens and closes the same way, reduced motion included. Menus, sidebars and the command palette share one highlight that glides between items, and the HUD fades pieces out instead of unmounting them, so windows open without a flicker. Agents got pixel portraits instead of emoji.
 
 A later pass made buttons, loading and empty states consistent across the app and revamped the admin panel.
+
+The SwiftUI app for iPhone and iPad got the same portraits and a calmer indigo accent, with Liquid Glass buttons and menus, long-press previews, zoom transitions and split views on iPad. The Mac app, a Tauri shell around the web build, got Settings on Cmd , and a Help menu that opens the docs, and its offline screen now matches the loading screen.
 
 ## Rough edges
 
