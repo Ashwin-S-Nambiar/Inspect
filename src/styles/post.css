@@ -26,6 +26,18 @@
   color: var(--muted);
 }
 
+.revised {
+  margin-top: 48px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--faint);
+}
+
+.revised time {
+  color: var(--muted);
+}
+
 .dek {
   margin-bottom: 32px;
   font-size: 16px;

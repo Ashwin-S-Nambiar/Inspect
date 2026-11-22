@@ -22,6 +22,8 @@ const articleCards: Record<string, string> = cards;
 const { Content, headings } = await render(post);
 const sections = headings.filter((h) => h.depth === 2);
 const { title, dek, date, updated, kind, project, hero } = post.data;
+// Only worth saying when the post changed after the day it went up.
+const revised = updated && updated.getTime() - date.getTime() > 2 * 86_400_000 ? updated : undefined;
 const name = vt(post);
 const minutes = readTime(post);
 const section = sectionOf(post);
@@ -79,7 +81,6 @@ const links = project && [
       <h1 class="post-title" id="top" style={`view-transition-name: title-${name}`}>{title}</h1>
       <p class="byline" data-in style="--i:2">
         <time datetime={date.toISOString()}>{formatDate(date)}</time>
-        {updated && <span>Revised {formatDate(updated)}</span>}
         {kind !== 'project' && <span>{kindLabel(kind)}</span>}
         <span>{minutes} min read</span>
       </p>
@@ -112,6 +113,11 @@ const links = project && [
     <div class="prose" data-in style="--i:6">
       <Content components={{ pre: CodeCard, Project: ProjectLink }} />
     </div>
+    {revised && (
+      <p class="revised">
+        Last updated <time datetime={revised.toISOString()}>{formatDate(revised)}</time>
+      </p>
+    )}
     {notes.length > 0 && (
       <section class="more" aria-labelledby="notes-h">
         <h2 class="sect" id="notes-h">Notes on {project?.name ?? title} <span>{notes.length}</span></h2>
